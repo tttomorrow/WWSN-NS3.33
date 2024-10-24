@@ -1,0 +1,3 @@
+SimulationSecond,ReceiveRate,PacketsReceived,NumberOfSinks,RoutingProtocol,TransmissionPower
+0,0,0,1,AODV,
+1,0,0,1,AODV,

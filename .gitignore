@@ -1,0 +1,83 @@
+# 编译输出文件
+bin/
+obj/
+
+# Visual Studio 用户设置文件
+.vs/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# 缓存、日志文件等
+*.log
+*.tlog
+*.cache
+*.pdb
+*.ilk
+*.tmp
+*.csproj.user
+
+# 临时的自动生成的文件
+*.tmp
+*.tmp.*
+*.log
+*.mdf
+*.ldf
+
+# NuGet
+*.nupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+
+# 拒绝上传调试配置
+debug/
+release/
+
+# Publish
+*.Publish.xml
+*.PublishSettings
+
+# Rider
+.idea/
+
+# Mac 专属文件
+.DS_Store
+
+# Git 特殊文件
+!.gitignore
+
+
+src/
+bindings/
+build/
+contrib/
+doc/
+examples/
+utils/
+waf-tools/
+AUTHORS
+CHANGES.html
+CONTRIBUTING.md
+LICENSE
+Makefile
+README.md
+RELEASE_NOTES
+test.py
+testpy.supp
+utils.py
+VERSION
+waf
+waf.bat
+wscript
+wutils.py
+.lock-waf_linux_build
+.waf3-2.0.21-c6c9a875365426e5928462b9b74d40b5
+__pycache__
+.vscode
+testpy-output
+pcap*

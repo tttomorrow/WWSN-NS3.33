@@ -26,14 +26,13 @@
 using namespace ns3;
 using namespace dsr;
 
-NS_LOG_COMPONENT_DEFINE ("sniffer(20240701)"); 
-
-
 void ClearFile(const std::string &filename) {
     std::ofstream ofs;
     ofs.open(filename, std::ofstream::out | std::ofstream::trunc);
     ofs.close();
 }
+
+NS_LOG_COMPONENT_DEFINE ("sniffer(20240701)"); 
 
 void RemainingEnergy(double oldValue, double remainingEnergy) {
     
@@ -54,75 +53,6 @@ void RemainingEnergy(double oldValue, double remainingEnergy) {
     f << Simulator::Now().GetSeconds() << "," << remainingEnergy << "\n";
 }
 
-// 获取MAC地址对应的节点ID的函数
-uint32_t GetNodeIdFromMacAddress(Mac48Address mac) {
-    uint8_t macArray[6];
-    mac.CopyTo(macArray);
-    uint32_t nodeId = macArray[5] + 1; // 最后一字节加1
-    return nodeId;
-}
-
-// 从 context 字符串中提取节点ID并加1
-uint32_t GetNodeIdFromContext(const std::string &context) {
-    size_t startPos = context.find("/NodeList/") + 10;
-    size_t endPos = context.find("/", startPos);
-    if (startPos != std::string::npos && endPos != std::string::npos) {
-        uint32_t nodeId = std::stoi(context.substr(startPos, endPos - startPos));
-        return nodeId + 1;
-    }
-    return 0; // 未找到节点ID，返回0
-}
-struct PacketInfo {
-    std::string packetType;
-    Mac48Address srcMac;
-    uint32_t srcNodeId;
-    uint32_t SequenceNumber;
-};
-
-PacketInfo HandlePacket(Ptr<const Packet> packet) {
-    uint32_t packetSize = packet->GetSize();
-    Mac48Address srcMac;
-    std::string packetType;
-    PacketInfo info;
-
-    // 将数据包内容复制到缓冲区
-    uint8_t buffer[1500];
-
-    packet->CopyData(buffer, packetSize);
-
-    // 解析MAC层
-    uint32_t SequenceNumber = 0;
-    if (packetSize > 14) { // 至少需要14字节才能解析MAC层头部
-        srcMac.CopyFrom(buffer + 10); // 第11到16字节是源MAC地址
-        // packetType = "Generic Ethernet Frame";
-        SequenceNumber =  (buffer[22] << 8) | buffer[23];
-        if (buffer[30] == 0x08 && buffer[31] == 0x00) { // IPv4
-            // 解析网络层（IPv4）
-            if (packetSize >= 34) { // 至少需要34字节才能解析IPv4头部
-                if (buffer[41] == 0x11) { // UDP
-                    packetType = "UDP";
-                } else if (buffer[41] == 0x01) { // ICMP
-                    packetType = "ICMP";
-                }
-            }
-        } else if (buffer[30] == 0x08 && buffer[31] == 0x06) { // ARP
-            packetType = "ARP";
-        }
-    } else {
-        packetType = "ADOV";
-    }
-
-    uint32_t srcNodeId = GetNodeIdFromMacAddress(srcMac);
-
-    info.packetType = packetType;
-    info.srcMac = srcMac;
-    info.srcNodeId = srcNodeId;
-    info.SequenceNumber = SequenceNumber;
-
-
-    return info;
-}
-
 void MonitorSnifferRx (std::string context, Ptr<const Packet> packet, uint16_t channelFreqMhz, WifiTxVector txVector, MpduInfo aMpdu, SignalNoiseDbm signalNoise, uint16_t staId)
 {
     
@@ -135,23 +65,38 @@ void MonitorSnifferRx (std::string context, Ptr<const Packet> packet, uint16_t c
     static bool first = true;
     if (first) {
         ClearFile("wwsn20240701MonitorSnifferRx.csv");
-        f << "PacketType, SequenceNumber, listener,SrcNodeId, SNR, SignalPower,NoisePower,PacketSize,ChannelFreqMhz,MpduRefNumber,StaId\n";
+        f << "Context, srcAddress,destAddress, PacketSize,ChannelFreqMhz,SignalPower,NoisePower,MpduRefNumber,StaId\n";
         first = false;
     }
+//     Ptr<Packet> packetCopy = packet->Copy();
+//     EthernetHeader ethHeader;
+//     Ipv4Header ipHeader;
+
+//     // 提取以太网头
+//     packetCopy->RemoveHeader(ethHeader);
+  
+//     // 提取IP头
+//     packetCopy->RemoveHeader(ipHeader);
+
+//   Mac48Address  sourceIp = ethHeader.GetSource();
+//   Mac48Address  destIp = ethHeader.GetDestination();
+
+	// uint8_t buffer[2];
+	// packet->CopyData(buffer,2);
+
+
+
+//   NS_LOG_INFO ("Received packet from Mac48Address : " << int(buffer[0]) << " to Mac48Address : " << int(buffer[1]));
+    // 从数据包中提取整数
     
-    PacketInfo info = HandlePacket(packet);
-    uint32_t listenerNodeId = GetNodeIdFromContext(context);
-       
     // 写入参数值到 CSV 文件
-    f << info.packetType << ","
-      << info.SequenceNumber << ","
-      << listenerNodeId << ","
-      << info.srcNodeId << ","
-      << signalNoise.signal - signalNoise.noise << ","
-      << signalNoise.signal << ","
-      << signalNoise.noise << ","
+    f << context << ","
+    //   << sourceIp << ","
+    //   << destIp << ","
       << packet->GetSize() << ","
       << channelFreqMhz << ","
+      << signalNoise.signal << ","
+      << signalNoise.noise << ","
       << aMpdu.mpduRefNumber << ","
       << staId << "\n";
 }
@@ -168,20 +113,30 @@ void MonitorSnifferTx (std::string context, Ptr<const Packet> packet, uint16_t c
     static bool first = true;
     if (first) {
         ClearFile("wwsn20240701MonitorSnifferTx.csv");
-        f << "PacketType,SequenceNumber,listener,SrcNodeId,PacketSize,ChannelFreqMhz,MpduRefNumber,StaId\n";
+        f << "Context,srcAddress,destAddress,PacketSize,ChannelFreqMhz,MpduRefNumber,StaId\n";
         first = false;
     }
 
-    PacketInfo info = HandlePacket(packet);
-    uint32_t listenerNodeId = GetNodeIdFromContext(context);
+    // Ptr<Packet> packetCopy = packet->Copy();
+    // EthernetHeader ethHeader;
+    // Ipv4Header ipHeader;
+
+    // // 提取以太网头
+    // packetCopy->RemoveHeader(ethHeader);
+  
+    // // 提取IP头
+    // packetCopy->RemoveHeader(ipHeader);
+
+    // Ipv4Address sourceIp = ipHeader.GetSource();
+    // Ipv4Address destIp = ipHeader.GetDestination();
+
     // NS_LOG_INFO ("Received packet from IP: " << sourceIp << " to IP: " << destIp);
     
     // 写入参数值到 CSV 文件
-    f << info.packetType << ","
-      << info.SequenceNumber <<","
-      << listenerNodeId << ","
-      << info.srcNodeId << ","
-      << packet->GetSize() << ","
+    f << context << ","
+    //   << sourceIp << ","
+    //   << destIp << ","
+      << packet->GetUid() << ","
       << channelFreqMhz << ","
       << aMpdu.mpduRefNumber << ","
       << staId << "\n";
@@ -520,7 +475,7 @@ Experiment::Run (int nSinks, std::string CSVfileName) // 运行函数
 
 
     // int n_maliciouse = 10;
-    int n_Nodes = 50; // number of WSN nodes
+    int n_Nodes = 20; // number of WSN nodes
     double Totaltime = 100.0; //sim time (s)
     std::string phyMode ("DsssRate1Mbps"); // 物理模式
     
@@ -546,19 +501,20 @@ Experiment::Run (int nSinks, std::string CSVfileName) // 运行函数
     YansWifiChannelHelper wifiChannel; // 创建YANS WiFi信道助手
     wifiChannel.SetPropagationDelay ("ns3::ConstantSpeedPropagationDelayModel"); // 设置传播延迟模型
     wifiChannel.AddPropagationLoss ("ns3::FriisPropagationLossModel"); // 添加传播损耗模型
-
     // 
 
 
 
     // // For range near 250m
-    wifiPhy.Set ("TxPowerStart", DoubleValue(5.5));
-    wifiPhy.Set ("TxPowerEnd", DoubleValue(5.5));
-    wifiPhy.Set ("TxPowerLevels", UintegerValue(1));
-    wifiPhy.Set ("TxGain", DoubleValue(0));
-    wifiPhy.Set ("RxGain", DoubleValue(0));
-    wifiPhy.Set ("RxSensitivity", DoubleValue(-100)); /*csmmmari -61.8*/
-
+    wifiPhy.Set ("TxPowerStart", DoubleValue(7.5));
+    wifiPhy.Set ("TxPowerEnd", DoubleValue(7.5));
+    // wifiPhy.Set ("TxPowerLevels", UintegerValue(1));
+    // wifiPhy.Set ("TxGain", DoubleValue(0));
+    // wifiPhy.Set ("RxGain", DoubleValue(0));
+    // //wifiPhy.Set ("EnergyDetectionThreshold", DoubleValue(-61.8));
+    // //wifiPhy.Set ("CcaMode1Threshold", DoubleValue(-64.8));
+    // wifiPhy.Set ("RxSensitivity", DoubleValue(-61.8)); /*csmmmari -61.8*/
+    // wifiPhy.Set ("CcaEdThreshold", DoubleValue(-64.8)); /*csmmmari*/
 
     wifiPhy.SetChannel (wifiChannel.Create ()); // 设置WiFi物理层的信道
 
@@ -598,21 +554,6 @@ Experiment::Run (int nSinks, std::string CSVfileName) // 运行函数
 
     Ptr<ConstantPositionMobilityModel> centerPosition = wwsnNodes.Get(0)->GetObject<ConstantPositionMobilityModel>();
     centerPosition->SetPosition(Vector(150.0, 150.0, 0.0)); // 设置节点0的X、Y坐标为网络中心 (250, 250)，Z坐标为0
-
-    // // 为其他节点分配均匀的位置
-    // uint32_t numNodes = wwsnNodes.GetN();
-    // double gridSpacing = std::sqrt(300.0 * 300.0 / (numNodes - 1)); // 根据节点数量计算网格间距
-
-    // uint32_t nodeIndex = 1;
-    // for (double x = gridSpacing / 2; x < 300.0; x += gridSpacing) {
-    //     for (double y = gridSpacing / 2; y < 300.0; y += gridSpacing) {
-    //         if (nodeIndex >= numNodes) break;
-    //         Ptr<ConstantPositionMobilityModel> nodePosition = wwsnNodes.Get(nodeIndex)->GetObject<ConstantPositionMobilityModel>();
-    //         nodePosition->SetPosition(Vector(x, y, 0.0));
-    //         nodeIndex++;
-    //     }
-    //     if (nodeIndex >= numNodes) break;
-    // }
 
     AodvHelper aodv; // 创建AODV助手
     OlsrHelper olsr; // 创建OLSR助手
