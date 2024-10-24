@@ -702,7 +702,7 @@ Experiment::Run (int nSinks, std::string CSVfileName) // 运行函数
 
     CheckThroughput (); // 检查吞吐量
 
-    wifiPhy.EnablePcapAll ("pcap\\wwsn20240701");
+    wifiPhy.EnablePcapAll ("pcap/wwsn20240701");
     AnimationInterface anim("wwsn20240701.xml"); // 创建动画接口
     Simulator::Stop (Seconds (Totaltime)); // 停止仿真
     Simulator::Run (); // 运行仿真

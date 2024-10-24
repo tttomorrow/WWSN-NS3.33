@@ -81,3 +81,8 @@ __pycache__
 .vscode
 testpy-output
 pcap*
+*.csv
+*.xml
+pcap/
+scratch-simulator
+scratch/subdir/
