@@ -86,3 +86,4 @@ pcap*
 pcap/
 scratch-simulator
 scratch/subdir/
+*Exp/

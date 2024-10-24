@@ -2,6 +2,8 @@
 #include <iostream> // 包含输入输出流头文件，用于标准输入输出
 #include <vector>
 #include <string>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include "ns3/wifi-module.h"
 
 #include "ns3/core-module.h" // ns-3模拟器核心模块头文件
@@ -26,8 +28,11 @@
 using namespace ns3;
 using namespace dsr;
 
-NS_LOG_COMPONENT_DEFINE ("sniffer(20240701)"); 
+const char expname0[] = "20241024_Exp";
 
+NS_LOG_COMPONENT_DEFINE (expname0); 
+
+std::string expname = "20241024_Exp";
 
 void ClearFile(const std::string &filename) {
     std::ofstream ofs;
@@ -36,8 +41,8 @@ void ClearFile(const std::string &filename) {
 }
 
 void RemainingEnergy(double oldValue, double remainingEnergy) {
-    
-    static std::fstream f("wwsn20240701remaining_energy.csv", std::ios::out | std::ios::app);
+    std::string filename = expname + "/remaining_energy.csv";
+    static std::fstream f(filename, std::ios::out | std::ios::app);
     if (!f.is_open()) {
         std::cerr << "Error opening file" << std::endl;
         return;
@@ -45,7 +50,7 @@ void RemainingEnergy(double oldValue, double remainingEnergy) {
     // 写入 CSV 文件头（仅在第一次写入时）
     static bool first = true;
     if (first) {
-        ClearFile("wwsn20240701remaining_energy.csv");
+        ClearFile(filename);
         f << "Time,RemainingEnergy\n";
         first = false;
     }
@@ -125,8 +130,8 @@ PacketInfo HandlePacket(Ptr<const Packet> packet) {
 
 void MonitorSnifferRx (std::string context, Ptr<const Packet> packet, uint16_t channelFreqMhz, WifiTxVector txVector, MpduInfo aMpdu, SignalNoiseDbm signalNoise, uint16_t staId)
 {
-    
-    static std::fstream f ("wwsn20240701MonitorSnifferRx.csv", std::ios::out | std::ios::app);
+    std::string filename = expname + "/MonitorSnifferRx.csv";
+    static std::fstream f (filename, std::ios::out | std::ios::app);
     if (!f.is_open()) {
         std::cerr << "Error opening file" << std::endl;
         return;
@@ -134,7 +139,7 @@ void MonitorSnifferRx (std::string context, Ptr<const Packet> packet, uint16_t c
     // 写入 CSV 文件头（仅在第一次写入时）
     static bool first = true;
     if (first) {
-        ClearFile("wwsn20240701MonitorSnifferRx.csv");
+        ClearFile(filename);
         f << "PacketType, SequenceNumber, listener,SrcNodeId, SNR, SignalPower,NoisePower,PacketSize,ChannelFreqMhz,MpduRefNumber,StaId\n";
         first = false;
     }
@@ -158,8 +163,8 @@ void MonitorSnifferRx (std::string context, Ptr<const Packet> packet, uint16_t c
 
 void MonitorSnifferTx (std::string context, Ptr<const Packet> packet, uint16_t channelFreqMhz, WifiTxVector txVector, MpduInfo aMpdu, uint16_t staId)
 {
-    
-    static std::fstream f ("wwsn20240701MonitorSnifferTx.csv", std::ios::out | std::ios::app);
+    std::string filename = expname + "/MonitorSnifferTx.csv";
+    static std::fstream f (filename, std::ios::out | std::ios::app);
     if (!f.is_open()) {
         std::cerr << "Error opening file" << std::endl;
         return;
@@ -167,7 +172,7 @@ void MonitorSnifferTx (std::string context, Ptr<const Packet> packet, uint16_t c
     // 写入 CSV 文件头（仅在第一次写入时)
     static bool first = true;
     if (first) {
-        ClearFile("wwsn20240701MonitorSnifferTx.csv");
+        ClearFile(filename);
         f << "PacketType,SequenceNumber,listener,SrcNodeId,PacketSize,ChannelFreqMhz,MpduRefNumber,StaId\n";
         first = false;
     }
@@ -416,7 +421,7 @@ Experiment::Experiment()
         : port (9), // 初始化端口号为9
           bytesTotal (0), // 初始化总字节数为0
           packetsReceived (0), // 初始化收到的数据包数量为0
-          m_CSVfileName ("WWSNwithSniffer20240701.csv"), // 初始化CSV文件名
+          m_CSVfileName ("WWSNwithSniffer.csv"), // 初始化CSV文件名
           m_traceMobility (false), // 初始化移动性跟踪标志为false
           m_protocol (2) // 初始化协议类型
 {
@@ -702,8 +707,10 @@ Experiment::Run (int nSinks, std::string CSVfileName) // 运行函数
 
     CheckThroughput (); // 检查吞吐量
 
-    wifiPhy.EnablePcapAll ("pcap/wwsn20240701");
-    AnimationInterface anim("wwsn20240701.xml"); // 创建动画接口
+    std::string filename = expname + "/pcap/wwsn";
+    wifiPhy.EnablePcapAll (filename);
+    filename = expname + "/wwsn.xml";
+    AnimationInterface anim(filename); // 创建动画接口
     Simulator::Stop (Seconds (Totaltime)); // 停止仿真
     Simulator::Run (); // 运行仿真
     
@@ -723,9 +730,16 @@ Experiment::Run (int nSinks, std::string CSVfileName) // 运行函数
 int
 main (int argc, char *argv[]) // 主函数
 {
-    LogComponentEnable("sniffer(20240701)", LOG_ALL);
+
+    
+    LogComponentEnable(expname0, LOG_ALL);
     Experiment experiment; // 创建Experiment对象
-    std::string CSVfileName = "wwsn20240701experiment"; // 调用命令设置函数获取CSV文件名
+    std::string expname = "20241024_Exp";
+    const char* folder0 = "20241024_Exp";
+    mkdir(folder0, 0777);
+    const char* folder1 = "20241024_Exp/pcap";
+    mkdir(folder1, 0777);
+    std::string CSVfileName = expname + "/experiment"; // 调用命令设置函数获取CSV文件名
 
     //清空上一个输出文件并写入列标题
     std::ofstream out (CSVfileName.c_str ());
