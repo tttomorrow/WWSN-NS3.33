@@ -37,85 +37,85 @@ namespace ns3 {
 NS_LOG_COMPONENT_DEFINE ("PropagationLossModel");
 
 // ------------------------------------------------------------------------- //
-NS_OBJECT_ENSURE_REGISTERED (FriisPropagationLossModel);
+NS_OBJECT_ENSURE_REGISTERED (undergroundLoraLoss);
 
-TypeId FriisPropagationLossModel::GetTypeId (void)
+TypeId undergroundLoraLoss::GetTypeId (void)
 {
-  static TypeId tid = TypeId ("FriisPropagationLossModel")
+  static TypeId tid = TypeId ("ns3::undergroundLoraLoss")
     .SetParent<PropagationLossModel> ()
-    .AddConstructor<FriisPropagationLossModel> ()
+    .AddConstructor<undergroundLoraLoss> ()
     .AddAttribute ("Frequency", 
                    "The carrier frequency (in Hz) at which propagation occurs  (default is 515 MHz).",
-                   DoubleValue (515e8),
-                   MakeDoubleAccessor (&FriisPropagationLossModel::SetFrequency,
-                                       &FriisPropagationLossModel::GetFrequency),
+                   DoubleValue (5.15e8),
+                   MakeDoubleAccessor (&undergroundLoraLoss::SetFrequency,
+                                       &undergroundLoraLoss::GetFrequency),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("SystemLoss", "The system loss",
                    DoubleValue (1.0),
-                   MakeDoubleAccessor (&FriisPropagationLossModel::m_systemLoss),
+                   MakeDoubleAccessor (&undergroundLoraLoss::m_systemLoss),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("MinLoss", 
                    "The minimum value (dB) of the total loss, used at short ranges. Note: ",
                    DoubleValue (0.0),
-                   MakeDoubleAccessor (&FriisPropagationLossModel::SetMinLoss,
-                                       &FriisPropagationLossModel::GetMinLoss),
+                   MakeDoubleAccessor (&undergroundLoraLoss::SetMinLoss,
+                                       &undergroundLoraLoss::GetMinLoss),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("Mv", 
                     "The soil volumetric water content (mv).",
                     DoubleValue (0.05),
-                    MakeDoubleAccessor (&FriisPropagationLossModel::SetMv),
+                    MakeDoubleAccessor (&undergroundLoraLoss::SetMv),
                     MakeDoubleChecker<double> ())
   ;
   return tid;
 }
 
-FriisPropagationLossModel::FriisPropagationLossModel()
-    : m_frequency(5.150e9), m_systemLoss(1.0), m_minLoss(0.0), m_mv(0.0),
+undergroundLoraLoss::undergroundLoraLoss()
+    : m_frequency(5.150e8), m_systemLoss(1.0), m_minLoss(0.0), m_mv(0.0),
       m_moistureUpdater(new SoilMoistureUpdater()) // 初始化成员变量
 {
     // 其他初始化代码（如果需要）
 }
 
-FriisPropagationLossModel::~FriisPropagationLossModel ()
+undergroundLoraLoss::~undergroundLoraLoss ()
 {
   delete m_moistureUpdater; // 确保释放内存// 如果需要，可以在这里添加析构函数的代码
 }
 
 void
-FriisPropagationLossModel::SetSystemLoss (double systemLoss)
+undergroundLoraLoss::SetSystemLoss (double systemLoss)
 {
   m_systemLoss = systemLoss;
 }
 double
-FriisPropagationLossModel::GetSystemLoss (void) const
+undergroundLoraLoss::GetSystemLoss (void) const
 {
   return m_systemLoss;
 }
 void
-FriisPropagationLossModel::SetMinLoss (double minLoss)
+undergroundLoraLoss::SetMinLoss (double minLoss)
 {
   m_minLoss = minLoss;
 }
 double
-FriisPropagationLossModel::GetMinLoss (void) const
+undergroundLoraLoss::GetMinLoss (void) const
 {
   return m_minLoss;
 }
 
 void
-FriisPropagationLossModel::SetMv (double mv)
+undergroundLoraLoss::SetMv (double mv)
 {
   m_mv = mv;
 }
 
 double
-FriisPropagationLossModel::GetMv (void) const
+undergroundLoraLoss::GetMv (void) const
 {
   return m_mv;
 }
 
 void
-FriisPropagationLossModel::SetFrequency (double frequency)
+undergroundLoraLoss::SetFrequency (double frequency)
 {
   m_frequency = frequency;
   static const double C = 299792458.0; // speed of light in vacuum
@@ -123,20 +123,20 @@ FriisPropagationLossModel::SetFrequency (double frequency)
 }
 
 double
-FriisPropagationLossModel::GetFrequency (void) const
+undergroundLoraLoss::GetFrequency (void) const
 {
   return m_frequency;
 }
 
 double
-FriisPropagationLossModel::DbmToW (double dbm) const
+undergroundLoraLoss::DbmToW (double dbm) const
 {
   double mw = std::pow (10.0,dbm/10.0);
   return mw / 1000.0;
 }
 
 double
-FriisPropagationLossModel::DbmFromW (double w) const
+undergroundLoraLoss::DbmFromW (double w) const
 {
   double dbm = std::log10 (w * 1000.0) * 10.0;
   return dbm;
@@ -144,7 +144,7 @@ FriisPropagationLossModel::DbmFromW (double w) const
 
 
 double 
-FriisPropagationLossModel::DoCalcRxPower (double txPowerDbm,
+undergroundLoraLoss::DoCalcRxPower (double txPowerDbm,
                                           Ptr<MobilityModel> a,
                                           Ptr<MobilityModel> b) const
 {
@@ -198,33 +198,29 @@ FriisPropagationLossModel::DoCalcRxPower (double txPowerDbm,
     double eps_r_double_prime = pow((pow(m_mv, beta_double_prime) * pow(m_eps_fw_double_prime, alpha_prime)), 1 / alpha_prime);
 
     // 计算频率
-    double frequency = FriisPropagationLossModel::GetFrequency();
+    double frequency = undergroundLoraLoss::GetFrequency();
 
     // 计算衰减常数 alpha
     double alpha = (2 * M_PI * frequency) * std::sqrt((miu * eps_r_prime / 2 * (sqrt(1 + pow(eps_r_double_prime / eps_r_prime, 2)) - 1)));
 
-    NS_LOG_DEBUG("distance=" << distance << "m, alpha=" << alpha << "dB");
-    
+
     // 计算相移常数 beta
     double beta = (2 * M_PI * frequency) * std::sqrt((miu * eps_r_prime / 2 * (sqrt(1 + pow(eps_r_double_prime / eps_r_prime, 2)) + 1)));
-    NS_LOG_DEBUG("distance=" << distance << "m, beta=" << beta << "dB");
-    // 计算路径损失
-    double lossDb = 6.4 + 20 * std::log10(distance) + 20 * std::log10(beta) + 8.69 * alpha * distance;
 
-    // 输出调试信息
-    NS_LOG_DEBUG("distance=" << distance << "m, loss=" << lossDb << "dB");
+    // 计算路径损失
+    double lossDb = (6.4 + 20 * std::log10(distance) + 20 * std::log10(beta) + 8.69 * alpha * distance)/1000000;
 
     // 返回接收信号强度
     double rxPower = txPowerDbm - std::max(lossDb, m_minLoss);
 
-    NS_LOG_DEBUG("Calculated Rx Power: " << rxPower << " dBm");
+    NS_LOG_DEBUG("Calculated Rx Power: " << rxPower << " dBm, distance=" << distance << "m, loss=" << lossDb << "dB, alpha=" << alpha << "dB ,beta=" << beta << "dB");
 
     return rxPower;
     
 }
 
 int64_t
-FriisPropagationLossModel::DoAssignStreams (int64_t stream)
+undergroundLoraLoss::DoAssignStreams (int64_t stream)
 {
   return 0;
 }
@@ -334,142 +330,144 @@ RandomPropagationLossModel::DoAssignStreams (int64_t stream)
 
 // ------------------------------------------------------------------------- //
 
-// NS_OBJECT_ENSURE_REGISTERED (FriisPropagationLossModel);
+NS_OBJECT_ENSURE_REGISTERED (FriisPropagationLossModel);
 
-// TypeId 
-// FriisPropagationLossModel::GetTypeId (void)
-// {
-//   static TypeId tid = TypeId ("ns3::FriisPropagationLossModel")
-//     .SetParent<PropagationLossModel> ()
-//     .SetGroupName ("Propagation")
-//     .AddConstructor<FriisPropagationLossModel> ()
-//     .AddAttribute ("Frequency", 
-//                    "The carrier frequency (in Hz) at which propagation occurs  (default is 5.15 GHz).",
-//                    DoubleValue (5.150e9),
-//                    MakeDoubleAccessor (&FriisPropagationLossModel::SetFrequency,
-//                                        &FriisPropagationLossModel::GetFrequency),
-//                    MakeDoubleChecker<double> ())
-//     .AddAttribute ("SystemLoss", "The system loss",
-//                    DoubleValue (1.0),
-//                    MakeDoubleAccessor (&FriisPropagationLossModel::m_systemLoss),
-//                    MakeDoubleChecker<double> ())
-//     .AddAttribute ("MinLoss", 
-//                    "The minimum value (dB) of the total loss, used at short ranges. Note: ",
-//                    DoubleValue (0.0),
-//                    MakeDoubleAccessor (&FriisPropagationLossModel::SetMinLoss,
-//                                        &FriisPropagationLossModel::GetMinLoss),
-//                    MakeDoubleChecker<double> ())
-//   ;
-//   return tid;
-// }
+TypeId 
+FriisPropagationLossModel::GetTypeId (void)
+{
+  static TypeId tid = TypeId ("ns3::FriisPropagationLossModel")
+    .SetParent<PropagationLossModel> ()
+    .SetGroupName ("Propagation")
+    .AddConstructor<FriisPropagationLossModel> ()
+    .AddAttribute ("Frequency", 
+                   "The carrier frequency (in Hz) at which propagation occurs  (default is 5.15 GHz).",
+                   DoubleValue (5.150e9),
+                   MakeDoubleAccessor (&FriisPropagationLossModel::SetFrequency,
+                                       &FriisPropagationLossModel::GetFrequency),
+                   MakeDoubleChecker<double> ())
+    .AddAttribute ("SystemLoss", "The system loss",
+                   DoubleValue (1.0),
+                   MakeDoubleAccessor (&FriisPropagationLossModel::m_systemLoss),
+                   MakeDoubleChecker<double> ())
+    .AddAttribute ("MinLoss", 
+                   "The minimum value (dB) of the total loss, used at short ranges. Note: ",
+                   DoubleValue (0.0),
+                   MakeDoubleAccessor (&FriisPropagationLossModel::SetMinLoss,
+                                       &FriisPropagationLossModel::GetMinLoss),
+                   MakeDoubleChecker<double> ())
+  ;
+  return tid;
+}
 
-// FriisPropagationLossModel::FriisPropagationLossModel ()
-// {
-// }
-// void
-// FriisPropagationLossModel::SetSystemLoss (double systemLoss)
-// {
-//   m_systemLoss = systemLoss;
-// }
-// double
-// FriisPropagationLossModel::GetSystemLoss (void) const
-// {
-//   return m_systemLoss;
-// }
-// void
-// FriisPropagationLossModel::SetMinLoss (double minLoss)
-// {
-//   m_minLoss = minLoss;
-// }
-// double
-// FriisPropagationLossModel::GetMinLoss (void) const
-// {
-//   return m_minLoss;
-// }
+FriisPropagationLossModel::FriisPropagationLossModel ()
+{
+}
 
-// void
-// FriisPropagationLossModel::SetFrequency (double frequency)
-// {
-//   m_frequency = frequency;
-//   static const double C = 299792458.0; // speed of light in vacuum
-//   m_lambda = C / frequency;
-// }
 
-// double
-// FriisPropagationLossModel::GetFrequency (void) const
-// {
-//   return m_frequency;
-// }
+void
+FriisPropagationLossModel::SetSystemLoss (double systemLoss)
+{
+  m_systemLoss = systemLoss;
+}
+double
+FriisPropagationLossModel::GetSystemLoss (void) const
+{
+  return m_systemLoss;
+}
+void
+FriisPropagationLossModel::SetMinLoss (double minLoss)
+{
+  m_minLoss = minLoss;
+}
+double
+FriisPropagationLossModel::GetMinLoss (void) const
+{
+  return m_minLoss;
+}
 
-// double
-// FriisPropagationLossModel::DbmToW (double dbm) const
-// {
-//   double mw = std::pow (10.0,dbm/10.0);
-//   return mw / 1000.0;
-// }
+void
+FriisPropagationLossModel::SetFrequency (double frequency)
+{
+  m_frequency = frequency;
+  static const double C = 299792458.0; // speed of light in vacuum
+  m_lambda = C / frequency;
+}
 
-// double
-// FriisPropagationLossModel::DbmFromW (double w) const
-// {
-//   double dbm = std::log10 (w * 1000.0) * 10.0;
-//   return dbm;
-// }
+double
+FriisPropagationLossModel::GetFrequency (void) const
+{
+  return m_frequency;
+}
 
-// double 
-// FriisPropagationLossModel::DoCalcRxPower (double txPowerDbm,
-//                                           Ptr<MobilityModel> a,
-//                                           Ptr<MobilityModel> b) const
-// {
-//   /*
-//    * Friis free space equation:
-//    * where Pt, Gr, Gr and P are in Watt units
-//    * L is in meter units.
-//    *
-//    *    P     Gt * Gr * (lambda^2)
-//    *   --- = ---------------------
-//    *    Pt     (4 * pi * d)^2 * L
-//    *
-//    * Gt: tx gain (unit-less)
-//    * Gr: rx gain (unit-less)
-//    * Pt: tx power (W)
-//    * d: distance (m)
-//    * L: system loss
-//    * lambda: wavelength (m)
-//    *
-//    * Here, we ignore tx and rx gain and the input and output values 
-//    * are in dB or dBm:
-//    *
-//    *                           lambda^2
-//    * rx = tx +  10 log10 (-------------------)
-//    *                       (4 * pi * d)^2 * L
-//    *
-//    * rx: rx power (dB)
-//    * tx: tx power (dB)
-//    * d: distance (m)
-//    * L: system loss (unit-less)
-//    * lambda: wavelength (m)
-//    */
-//   double distance = a->GetDistanceFrom (b);
-//   if (distance < 3*m_lambda)
-//     {
-//       NS_LOG_WARN ("distance not within the far field region => inaccurate propagation loss value");
-//     }
-//   if (distance <= 0)
-//     {
-//       return txPowerDbm - m_minLoss;
-//     }
-//   double numerator = m_lambda * m_lambda;
-//   double denominator = 16 * M_PI * M_PI * distance * distance * m_systemLoss;
-//   double lossDb = -10 * log10 (numerator / denominator);
-//   NS_LOG_DEBUG ("distance=" << distance<< "m, loss=" << lossDb <<"dB");
-//   return txPowerDbm - std::max (lossDb, m_minLoss);
-// }
+double
+FriisPropagationLossModel::DbmToW (double dbm) const
+{
+  double mw = std::pow (10.0,dbm/10.0);
+  return mw / 1000.0;
+}
 
-// int64_t
-// FriisPropagationLossModel::DoAssignStreams (int64_t stream)
-// {
-//   return 0;
-// }
+double
+FriisPropagationLossModel::DbmFromW (double w) const
+{
+  double dbm = std::log10 (w * 1000.0) * 10.0;
+  return dbm;
+}
+
+double 
+FriisPropagationLossModel::DoCalcRxPower (double txPowerDbm,
+                                          Ptr<MobilityModel> a,
+                                          Ptr<MobilityModel> b) const
+{
+  /*
+   * Friis free space equation:
+   * where Pt, Gr, Gr and P are in Watt units
+   * L is in meter units.
+   *
+   *    P     Gt * Gr * (lambda^2)
+   *   --- = ---------------------
+   *    Pt     (4 * pi * d)^2 * L
+   *
+   * Gt: tx gain (unit-less)
+   * Gr: rx gain (unit-less)
+   * Pt: tx power (W)
+   * d: distance (m)
+   * L: system loss
+   * lambda: wavelength (m)
+   *
+   * Here, we ignore tx and rx gain and the input and output values 
+   * are in dB or dBm:
+   *
+   *                           lambda^2
+   * rx = tx +  10 log10 (-------------------)
+   *                       (4 * pi * d)^2 * L
+   *
+   * rx: rx power (dB)
+   * tx: tx power (dB)
+   * d: distance (m)
+   * L: system loss (unit-less)
+   * lambda: wavelength (m)
+   */
+  double distance = a->GetDistanceFrom (b);
+  if (distance < 3*m_lambda)
+    {
+      NS_LOG_WARN ("distance not within the far field region => inaccurate propagation loss value");
+    }
+  if (distance <= 0)
+    {
+      return txPowerDbm - m_minLoss;
+    }
+  double numerator = m_lambda * m_lambda;
+  double denominator = 16 * M_PI * M_PI * distance * distance * m_systemLoss;
+  double lossDb = -10 * log10 (numerator / denominator);
+  NS_LOG_DEBUG ("distance=" << distance<< "m, loss=" << lossDb <<"dB");
+  return txPowerDbm - std::max (lossDb, m_minLoss);
+}
+
+int64_t
+FriisPropagationLossModel::DoAssignStreams (int64_t stream)
+{
+  return 0;
+}
 
 // ------------------------------------------------------------------------- //
 // -- Two-Ray Ground Model ported from NS-2 -- tomhewer@mac.com -- Nov09 //

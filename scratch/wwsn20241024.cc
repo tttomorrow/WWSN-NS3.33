@@ -552,15 +552,15 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes)
     YansWifiPhyHelper wifiPhy; // 创建YANS WiFi物理助手
     YansWifiChannelHelper wifiChannel; // 创建YANS WiFi信道助手
     wifiChannel.SetPropagationDelay ("ns3::ConstantSpeedPropagationDelayModel"); // 设置传播延迟模型
-    wifiChannel.AddPropagationLoss ("FriisPropagationLossModel"); // 添加传播损耗模型
+    wifiChannel.AddPropagationLoss ("ns3::undergroundLoraLoss"); // 添加传播损耗模型
 
     // 
 
 
 
     // // For range near 250m
-    wifiPhy.Set ("TxPowerStart", DoubleValue(10000));
-    wifiPhy.Set ("TxPowerEnd", DoubleValue(10000));
+    wifiPhy.Set ("TxPowerStart", DoubleValue(5.5));
+    wifiPhy.Set ("TxPowerEnd", DoubleValue(5.5));
     wifiPhy.Set ("TxPowerLevels", UintegerValue(1));
     wifiPhy.Set ("TxGain", DoubleValue(0));
     wifiPhy.Set ("RxGain", DoubleValue(0));

@@ -151,16 +151,16 @@ private:
 
 
 
-class FriisPropagationLossModel : public PropagationLossModel
+class undergroundLoraLoss : public PropagationLossModel
 {
 public:
   static TypeId GetTypeId (void);
 
 
-  FriisPropagationLossModel();
+  undergroundLoraLoss();
   
-  FriisPropagationLossModel (SoilMoistureUpdater* moistureUpdater);
-  virtual ~FriisPropagationLossModel ();
+  undergroundLoraLoss (SoilMoistureUpdater* moistureUpdater);
+  virtual ~undergroundLoraLoss ();
 
 
   /**
@@ -210,14 +210,14 @@ private:
    *
    * Defined and unimplemented to avoid misuse
    */
-  FriisPropagationLossModel (const FriisPropagationLossModel &);
+  undergroundLoraLoss (const undergroundLoraLoss &);
   /**
    * \brief Copy constructor
    *
    * Defined and unimplemented to avoid misuse
    * \returns
    */
-  FriisPropagationLossModel & operator = (const FriisPropagationLossModel &);
+  undergroundLoraLoss & operator = (const undergroundLoraLoss &);
 
   virtual double DoCalcRxPower (double txPowerDbm,
                                 Ptr<MobilityModel> a,
@@ -244,6 +244,92 @@ private:
   double m_minLoss;       //!< the minimum loss
   double m_mv;
   SoilMoistureUpdater* m_moistureUpdater; // 添加指针以引用含水量更新器
+};
+
+
+class FriisPropagationLossModel : public PropagationLossModel
+{
+public:
+  static TypeId GetTypeId (void);
+  FriisPropagationLossModel();
+
+
+  /**
+   * \param frequency (Hz)
+   *
+   * Set the carrier frequency used in the Friis model 
+   * calculation.
+   */
+  void SetFrequency (double frequency);
+  /**
+   * \param systemLoss (dimension-less)
+   *
+   * Set the system loss used by the Friis propagation model.
+   */
+  void SetSystemLoss (double systemLoss);
+
+  /**
+   * \param minLoss the minimum loss (dB)
+   *
+   * no matter how short the distance, the total propagation loss (in
+   * dB) will always be greater or equal than this value 
+   */
+  void SetMinLoss (double minLoss);
+
+  /**
+   * \return the minimum loss.
+   */
+  double GetMinLoss (void) const;
+
+  /**
+   * \returns the current frequency (Hz)
+   */
+  double GetFrequency (void) const;
+
+
+  /**
+   * \returns the current system loss (dimension-less)
+   */
+  double GetSystemLoss (void) const;
+
+private:
+  /**
+   * \brief Copy constructor
+   *
+   * Defined and unimplemented to avoid misuse
+   */
+  FriisPropagationLossModel (const FriisPropagationLossModel &);
+  /**
+   * \brief Copy constructor
+   *
+   * Defined and unimplemented to avoid misuse
+   * \returns
+   */
+  FriisPropagationLossModel & operator = (const FriisPropagationLossModel &);
+
+  virtual double DoCalcRxPower (double txPowerDbm,
+                                Ptr<MobilityModel> a,
+                                Ptr<MobilityModel> b) const;
+  virtual int64_t DoAssignStreams (int64_t stream);
+
+  /**
+   * Transforms a Dbm value to Watt
+   * \param dbm the Dbm value
+   * \return the Watts
+   */
+  double DbmToW (double dbm) const;
+
+  /**
+   * Transforms a Watt value to Dbm
+   * \param w the Watt value
+   * \return the Dbm
+   */
+  double DbmFromW (double w) const;
+
+  double m_lambda;        //!< the carrier wavelength
+  double m_frequency;     //!< the carrier frequency
+  double m_systemLoss;    //!< the system loss
+  double m_minLoss;       //!< the minimum loss
 };
 
 
