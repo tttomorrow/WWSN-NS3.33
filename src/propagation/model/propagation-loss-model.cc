@@ -45,8 +45,8 @@ TypeId FriisPropagationLossModel::GetTypeId (void)
     .SetParent<PropagationLossModel> ()
     .AddConstructor<FriisPropagationLossModel> ()
     .AddAttribute ("Frequency", 
-                   "The carrier frequency (in Hz) at which propagation occurs  (default is 5.15 GHz).",
-                   DoubleValue (5.150e9),
+                   "The carrier frequency (in Hz) at which propagation occurs  (default is 515 MHz).",
+                   DoubleValue (515e8),
                    MakeDoubleAccessor (&FriisPropagationLossModel::SetFrequency,
                                        &FriisPropagationLossModel::GetFrequency),
                    MakeDoubleChecker<double> ())
@@ -70,20 +70,15 @@ TypeId FriisPropagationLossModel::GetTypeId (void)
 }
 
 FriisPropagationLossModel::FriisPropagationLossModel()
-    : FriisPropagationLossModel(new SoilMoistureUpdater()) // 使用默认的 SoilMoistureUpdater
+    : m_frequency(5.150e9), m_systemLoss(1.0), m_minLoss(0.0), m_mv(0.0),
+      m_moistureUpdater(new SoilMoistureUpdater()) // 初始化成员变量
 {
     // 其他初始化代码（如果需要）
 }
 
-FriisPropagationLossModel::FriisPropagationLossModel (SoilMoistureUpdater* moistureUpdater)
- : m_frequency(5.150e9), m_systemLoss(1.0), m_minLoss(0.0), m_mv(0.0),  m_moistureUpdater(moistureUpdater)
-{
-  // 如果需要，可以在这里添加构造函数的代码
-}
-
 FriisPropagationLossModel::~FriisPropagationLossModel ()
 {
-  // 如果需要，可以在这里添加析构函数的代码
+  delete m_moistureUpdater; // 确保释放内存// 如果需要，可以在这里添加析构函数的代码
 }
 
 void
@@ -208,9 +203,11 @@ FriisPropagationLossModel::DoCalcRxPower (double txPowerDbm,
     // 计算衰减常数 alpha
     double alpha = (2 * M_PI * frequency) * std::sqrt((miu * eps_r_prime / 2 * (sqrt(1 + pow(eps_r_double_prime / eps_r_prime, 2)) - 1)));
 
+    NS_LOG_DEBUG("distance=" << distance << "m, alpha=" << alpha << "dB");
+    
     // 计算相移常数 beta
     double beta = (2 * M_PI * frequency) * std::sqrt((miu * eps_r_prime / 2 * (sqrt(1 + pow(eps_r_double_prime / eps_r_prime, 2)) + 1)));
-
+    NS_LOG_DEBUG("distance=" << distance << "m, beta=" << beta << "dB");
     // 计算路径损失
     double lossDb = 6.4 + 20 * std::log10(distance) + 20 * std::log10(beta) + 8.69 * alpha * distance;
 
@@ -218,7 +215,12 @@ FriisPropagationLossModel::DoCalcRxPower (double txPowerDbm,
     NS_LOG_DEBUG("distance=" << distance << "m, loss=" << lossDb << "dB");
 
     // 返回接收信号强度
-    return txPowerDbm - std::max(lossDb, m_minLoss);
+    double rxPower = txPowerDbm - std::max(lossDb, m_minLoss);
+
+    NS_LOG_DEBUG("Calculated Rx Power: " << rxPower << " dBm");
+
+    return rxPower;
+    
 }
 
 int64_t

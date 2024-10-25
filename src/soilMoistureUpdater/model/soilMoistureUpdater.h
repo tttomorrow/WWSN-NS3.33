@@ -6,9 +6,10 @@
 
 namespace ns3 {
 
-class SoilMoistureUpdater {
+class SoilMoistureUpdater : public Object{
 public:
     // 无参构造函数，使用默认参数
+    static TypeId GetTypeId (void);
     SoilMoistureUpdater(double initialMv = 0.05, double minMv = 0.0, double maxMv = 1.0);
 
     // 更新函数

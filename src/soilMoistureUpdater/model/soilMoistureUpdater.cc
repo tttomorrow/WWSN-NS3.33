@@ -5,6 +5,18 @@ namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("soilMoistureUpdater");
 
+NS_OBJECT_ENSURE_REGISTERED (SoilMoistureUpdater);
+
+
+TypeId
+SoilMoistureUpdater::GetTypeId ()
+{
+  static TypeId tid = TypeId ("ns3::SoilMoistureUpdater")
+    .SetParent<Object>() // 确保这是一个 NS-3 对象
+    .AddConstructor<SoilMoistureUpdater> ();
+  return tid;
+}
+
 SoilMoistureUpdater::SoilMoistureUpdater(double initialMv, double minMv, double maxMv)
     : m_mv(initialMv), m_minMv(minMv), m_maxMv(maxMv) {
     ScheduleNextUpdate();

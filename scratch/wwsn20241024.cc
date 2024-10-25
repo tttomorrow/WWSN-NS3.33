@@ -5,7 +5,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "ns3/wifi-module.h"
-
 #include "ns3/core-module.h" // ns-3模拟器核心模块头文件
 #include "ns3/network-module.h" // ns-3网络模块头文件
 #include "ns3/internet-module.h" // ns-3互联网模块头文件
@@ -25,15 +24,15 @@
 #include <cmath>
 #include <complex>
 #include "ns3/netanim-module.h"
-#include "../scratch/soilMoistureUpdater.h"
+#include "ns3/soilMoistureUpdater.h"
 using namespace ns3;
 using namespace dsr;
 
-const char expname0[] = "20241024_1_Exp";
+const char expname0[] = "20241025_1_Exp";
 
 NS_LOG_COMPONENT_DEFINE (expname0); 
 
-std::string expname = "20241024_1_Exp";
+std::string expname = "20241025_1_Exp";
 
 void ClearFile(const std::string &filename) {
     std::ofstream ofs;
@@ -146,7 +145,7 @@ void MonitorSnifferRx (std::string context, Ptr<const Packet> packet, uint16_t c
     }
     
     PacketInfo info = HandlePacket(packet);
-    uint32_t listenerNodeId = GetNodeIdFromContext(context);
+    uint32_t listenerNodeId = GetNodeIdFromContext(context) + 1;
        
     // 写入参数值到 CSV 文件
     f << info.packetType << ","
@@ -553,15 +552,15 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes)
     YansWifiPhyHelper wifiPhy; // 创建YANS WiFi物理助手
     YansWifiChannelHelper wifiChannel; // 创建YANS WiFi信道助手
     wifiChannel.SetPropagationDelay ("ns3::ConstantSpeedPropagationDelayModel"); // 设置传播延迟模型
-    wifiChannel.AddPropagationLoss ("ns3::FriisPropagationLossModel"); // 添加传播损耗模型
+    wifiChannel.AddPropagationLoss ("FriisPropagationLossModel"); // 添加传播损耗模型
 
     // 
 
 
 
     // // For range near 250m
-    wifiPhy.Set ("TxPowerStart", DoubleValue(5.5));
-    wifiPhy.Set ("TxPowerEnd", DoubleValue(5.5));
+    wifiPhy.Set ("TxPowerStart", DoubleValue(10000));
+    wifiPhy.Set ("TxPowerEnd", DoubleValue(10000));
     wifiPhy.Set ("TxPowerLevels", UintegerValue(1));
     wifiPhy.Set ("TxGain", DoubleValue(0));
     wifiPhy.Set ("RxGain", DoubleValue(0));
@@ -595,8 +594,8 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes)
     MobilityHelper mobilityAdhoc; // 创建移动性助手
     ObjectFactory pos; // 创建对象工厂
     pos.SetTypeId ("ns3::RandomRectanglePositionAllocator"); // 设置位置分配器类型
-    pos.Set ("X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=300.0]")); // 设置X轴均匀随机分布
-    pos.Set ("Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=300.0]")); // 设置Y轴均匀随机分布
+    pos.Set ("X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=3.0]")); // 设置X轴均匀随机分布
+    pos.Set ("Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=3.0]")); // 设置Y轴均匀随机分布
 
     Ptr<PositionAllocator> taPositionAlloc = pos.Create ()->GetObject<PositionAllocator> (); // 创建位置分配器对象
 
@@ -734,13 +733,13 @@ int
 main (int argc, char *argv[]) // 主函数
 {
 
-    
+    ns3::LogComponentEnable("PropagationLossModel", ns3::LOG_LEVEL_DEBUG);
     LogComponentEnable(expname0, LOG_ALL);
     Experiment experiment; // 创建Experiment对象
-    std::string expname = "20241024_1_Exp";
-    const char* folder0 = "20241024_1_Exp";
+    std::string expname = "20241025_1_Exp";
+    const char* folder0 = "20241025_1_Exp";
     mkdir(folder0, 0777);
-    const char* folder1 = "20241024_1_Exp/pcap";
+    const char* folder1 = "20241025_1_Exp/pcap";
     mkdir(folder1, 0777);
     std::string CSVfileName = expname + "/experiment"; // 调用命令设置函数获取CSV文件名
 

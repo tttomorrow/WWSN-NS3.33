@@ -28,7 +28,7 @@
 #include "ns3/object.h"
 #include "ns3/random-variable-stream.h"
 #include <map>
-#include "../scratch/soilMoistureUpdater.h" // 
+#include "ns3/soilMoistureUpdater.h" // 
 namespace ns3 {
 
 
