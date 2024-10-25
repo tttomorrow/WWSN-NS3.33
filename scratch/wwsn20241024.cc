@@ -25,14 +25,15 @@
 #include <cmath>
 #include <complex>
 #include "ns3/netanim-module.h"
+#include "../scratch/soilMoistureUpdater.h"
 using namespace ns3;
 using namespace dsr;
 
-const char expname0[] = "20241024_Exp";
+const char expname0[] = "20241024_1_Exp";
 
 NS_LOG_COMPONENT_DEFINE (expname0); 
 
-std::string expname = "20241024_Exp";
+std::string expname = "20241024_1_Exp";
 
 void ClearFile(const std::string &filename) {
     std::ofstream ofs;
@@ -413,7 +414,9 @@ private:
 public:
     Experiment (); // 构造函数
     void Run (  int nSinks,
-                std::string CSVfileName); // 运行函数
+                std::string CSVfileName
+                , double simtime
+                , int nodes); // 运行函数
     std::string CommandSetup (int argc, char **argv); // 命令设置函数
 };
 
@@ -517,7 +520,7 @@ Experiment::CommandSetup (int argc, char **argv) // 命令设置函数
 }
 
 void
-Experiment::Run (int nSinks, std::string CSVfileName) // 运行函数
+Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes) // 运行函数
 {
     Packet::EnablePrinting (); // 启用数据包打印
     m_nSinks = nSinks; // 设置汇聚节点数量
@@ -525,8 +528,8 @@ Experiment::Run (int nSinks, std::string CSVfileName) // 运行函数
 
 
     // int n_maliciouse = 10;
-    int n_Nodes = 50; // number of WSN nodes
-    double Totaltime = 100.0; //sim time (s)
+    int n_Nodes = nodes; // number of WSN nodes
+    double Totaltime = simtime; //sim time (s)
     std::string phyMode ("DsssRate1Mbps"); // 物理模式
     
 
@@ -734,10 +737,10 @@ main (int argc, char *argv[]) // 主函数
     
     LogComponentEnable(expname0, LOG_ALL);
     Experiment experiment; // 创建Experiment对象
-    std::string expname = "20241024_Exp";
-    const char* folder0 = "20241024_Exp";
+    std::string expname = "20241024_1_Exp";
+    const char* folder0 = "20241024_1_Exp";
     mkdir(folder0, 0777);
-    const char* folder1 = "20241024_Exp/pcap";
+    const char* folder1 = "20241024_1_Exp/pcap";
     mkdir(folder1, 0777);
     std::string CSVfileName = expname + "/experiment"; // 调用命令设置函数获取CSV文件名
 
@@ -753,9 +756,9 @@ main (int argc, char *argv[]) // 主函数
     out.close ();
 
     int nSinks = 1; // 汇聚节点数量
-
-
-    experiment.Run (nSinks, CSVfileName); // 运行实验
+    double simtime = 50.0;
+    int num_nodes = 50;  
+    experiment.Run (nSinks, CSVfileName, simtime, num_nodes); // 运行实验
 
 
     return 0; // 返回0表示成功

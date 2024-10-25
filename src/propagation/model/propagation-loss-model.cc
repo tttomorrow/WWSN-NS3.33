@@ -31,6 +31,7 @@
 #include <cmath>
 #include <complex>
 
+
 namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("PropagationLossModel");
@@ -68,7 +69,14 @@ TypeId FriisPropagationLossModel::GetTypeId (void)
   return tid;
 }
 
-FriisPropagationLossModel::FriisPropagationLossModel ()
+FriisPropagationLossModel::FriisPropagationLossModel()
+    : FriisPropagationLossModel(new SoilMoistureUpdater()) // 使用默认的 SoilMoistureUpdater
+{
+    // 其他初始化代码（如果需要）
+}
+
+FriisPropagationLossModel::FriisPropagationLossModel (SoilMoistureUpdater* moistureUpdater)
+ : m_frequency(5.150e9), m_systemLoss(1.0), m_minLoss(0.0), m_mv(0.0),  m_moistureUpdater(moistureUpdater)
 {
   // 如果需要，可以在这里添加构造函数的代码
 }
@@ -183,7 +191,7 @@ FriisPropagationLossModel::DoCalcRxPower (double txPowerDbm,
     double m_S = 0.5; //沙的质量分数。
     double m_C = 0.5; //粘土的质量分数。
     double m_rho_b =  2.86;//土壤体密度
-    double m_mv = FriisPropagationLossModel::GetMv();//壤体积含水量
+    double m_mv = m_moistureUpdater->GetMv(); // 获取当前含水量
     double m_eps_fw_prime = 80.3;//水的相对介电常数实部。
     double m_eps_fw_double_prime = 2.75;//水的相对介电常数虚部。
     double beta_prime = 1.2748 - 0.519 * m_S - 0.152 * m_C;

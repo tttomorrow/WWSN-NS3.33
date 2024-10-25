@@ -28,7 +28,7 @@
 #include "ns3/object.h"
 #include "ns3/random-variable-stream.h"
 #include <map>
-
+#include "../scratch/soilMoistureUpdater.h" // 
 namespace ns3 {
 
 
@@ -156,7 +156,10 @@ class FriisPropagationLossModel : public PropagationLossModel
 public:
   static TypeId GetTypeId (void);
 
-  FriisPropagationLossModel ();
+
+  FriisPropagationLossModel();
+  
+  FriisPropagationLossModel (SoilMoistureUpdater* moistureUpdater);
   virtual ~FriisPropagationLossModel ();
 
 
@@ -218,7 +221,7 @@ private:
 
   virtual double DoCalcRxPower (double txPowerDbm,
                                 Ptr<MobilityModel> a,
-                                Ptr<MobilityModel> b) const;
+                                Ptr<MobilityModel> b) const override;
   virtual int64_t DoAssignStreams (int64_t stream);
 
   /**
@@ -240,6 +243,7 @@ private:
   double m_systemLoss;    //!< the system loss
   double m_minLoss;       //!< the minimum loss
   double m_mv;
+  SoilMoistureUpdater* m_moistureUpdater; // 添加指针以引用含水量更新器
 };
 
 
