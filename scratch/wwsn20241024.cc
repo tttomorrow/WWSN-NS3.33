@@ -25,14 +25,16 @@
 #include <complex>
 #include "ns3/netanim-module.h"
 #include "ns3/soilMoistureUpdater.h"
+#include "ns3/AODVwithBHandSF.h"
+#include "ns3/AODVwithBHandSF-helper.h"
 using namespace ns3;
 using namespace dsr;
 
-const char expname0[] = "20241025_1_Exp";
+const char expname0[] = "20241029_2_Exp";
 
 NS_LOG_COMPONENT_DEFINE (expname0); 
 
-std::string expname = "20241025_1_Exp";
+std::string expname = "20241029_2_Exp";
 
 void ClearFile(const std::string &filename) {
     std::ofstream ofs;
@@ -207,11 +209,12 @@ public:
     virtual ~MyApp();  // 析构函数
     void RecPacket (Ptr<Socket> socket);
     void Setup (Ptr<Socket> socket, Ipv4Address source, Ipv4Address address, Mac48Address  macsource, Mac48Address  macdestination, uint32_t packetSize, uint32_t nPackets, DataRate dataRate);  // 设置应用程序参数
+    
 
 private:
     virtual void StartApplication (void);  // 启动应用程序
     virtual void StopApplication (void);  // 停止应用程序
-
+    void CheckThroughput (); // 检查吞吐量函数
     void ScheduleTx (void);  // 定时发送数据包
     void SendPacket (Ipv4Address source, Ipv4Address address, Mac48Address  macsource, Mac48Address  macdestination);  // 发送数据包
     
@@ -227,6 +230,8 @@ private:
     bool            m_running;  // 是否正在运行
     uint32_t        m_packetsSent;  // 已发送数据包数量
     uint32_t        port; // 端口号
+    uint32_t        bytesTotal; // 总字节数
+    std::string m_CSVfileName; // CSV文件名
 };
 
 MyApp::MyApp ()
@@ -241,7 +246,9 @@ MyApp::MyApp ()
           m_sendEvent (),
           m_running (false),
           m_packetsSent (0),
-          port (9)
+          port (9),
+          bytesTotal (0), // 初始化总字节数为0
+          m_CSVfileName ("WWSNwithSniffer.csv") // 初始化CSV文件名
 {
 }
 
@@ -266,6 +273,7 @@ MyApp::Setup (Ptr<Socket> socket, Ipv4Address source, Ipv4Address address, Mac48
 void
 MyApp::StartApplication (void)
 {   
+    CheckThroughput();
     InetSocketAddress remote = InetSocketAddress (m_peer, port); // 创建远程套接字地址
     // NS_LOG_INFO("remoteInetSocketAddress"<<remote);
     InetSocketAddress local = InetSocketAddress (m_source, port); // 创建本地套接字地址
@@ -294,6 +302,22 @@ MyApp::StopApplication (void)
 }
 
 void
+MyApp::CheckThroughput () // 检查吞吐量函数
+{
+    double kbs = (bytesTotal * 8.0) / 1000; // 计算吞吐量（kbps）
+    bytesTotal = 0; // 清零总字节数
+
+    std::ofstream out (m_CSVfileName.c_str (), std::ios::app); // 打开CSV文件流
+
+    out << (Simulator::Now ()).GetSeconds () << "," // 写入当前仿真时间
+        << kbs << "," // 写入吞吐量
+        << std::endl; // 换行
+
+    out.close (); // 关闭文件流
+    Simulator::Schedule (Seconds (5.0), &MyApp::CheckThroughput, this); // 定时调度下一次检查吞吐量
+}
+
+void
 MyApp::RecPacket(Ptr<Socket> socket)
 {
     Ptr<Packet> packet; // 创建Packet指针
@@ -301,7 +325,7 @@ MyApp::RecPacket(Ptr<Socket> socket)
     while ((packet = socket->RecvFrom (senderAddress))) // 当接收到数据包时
     {
         packetsReceivedList[socket->GetNode ()->GetId ()]++;
-
+        bytesTotal += packet->GetSize (); // 增加总字节数
         std::ostringstream ossip;
         ossip.str("");
         ossip.clear();
@@ -395,10 +419,6 @@ MyApp::ScheduleTx (void)
 class Experiment
 {
 private:
-    void CheckThroughput (); // 检查吞吐量函数
-    void ReceivePacket (Ptr<Socket> socket); // 接收数据包函数
-    void SendPacket (Ptr<Socket> socket, uint32_t available); // 发送数据包函数
-   
 
     uint32_t port; // 端口号
     uint32_t bytesTotal; // 总字节数
@@ -425,7 +445,7 @@ Experiment::Experiment()
           packetsReceived (0), // 初始化收到的数据包数量为0
           m_CSVfileName ("WWSNwithSniffer.csv"), // 初始化CSV文件名
           m_traceMobility (false), // 初始化移动性跟踪标志为false
-          m_protocol (2) // 初始化协议类型
+          m_protocol (4) // 初始化协议类型
 {
 }
 
@@ -449,71 +469,13 @@ PrintReceivedPacket (Ptr<Socket> socket, Ptr<Packet> packet, Address senderAddre
 }
 
 
-void
-Experiment::SendPacket (Ptr<Socket> socket, uint32_t datasend) // 发送数据包函数
-{
-    packetsSentPerNode[socket->GetNode ()->GetId ()]++; // 增加发送的数据包数量
-}
-
-void
-Experiment::ReceivePacket (Ptr<Socket> socket) // 接收数据包函数
-{
-    // Ptr<Packet> packet; // 创建Packet指针
-    // Address senderAddress; // 创建地址变量
-    // packetsReceivedList[socket->GetNode ()->GetId ()]++; // 增加接收的数据包数量
-    // while ((packet = socket->RecvFrom (senderAddress))) // 当接收到数据包时
-    // {
-    //     bytesTotal += packet->GetSize (); // 增加总字节数
-    //     packetsReceived += 1; // 增加收到的数据包数量
-
-    //     std::ostringstream ossip;
-    //     ossip.str("");
-    //     ossip.clear();
-    //     InetSocketAddress addr = InetSocketAddress::ConvertFrom (senderAddress); // 转换发送者地址为InetSocketAddress类型
-    //     Ipv4Address ipv4Addr = addr.GetIpv4(); // 获取 IPv4 地址
-    //     ipv4Addr.Print(ossip); // 将 IPv4 地址转换为字符串
-    //     std::string ipAddressString = ossip.str();
-    //     size_t lastDotPosition = ipAddressString.rfind('.');
-
-    //     // 提取最后两位数字的子字符串
-    //     std::string lastTwoDigitsStr = ipAddressString.substr(lastDotPosition + 1);
-
-    //     // 将子字符串转换为整数
-    //     int lastTwoDigits = std::stoi(lastTwoDigitsStr);
-
-    //     packetsReceivedFromList[lastTwoDigits-1]++; // 增加从特定节点接收的数据包数量
-
-    //     NS_LOG_UNCOND (PrintReceivedPacket (socket, packet, senderAddress)); // 打印接收到的数据包信息
-    // }
-}
-
-void
-Experiment::CheckThroughput () // 检查吞吐量函数
-{
-    double kbs = (bytesTotal * 8.0) / 1000; // 计算吞吐量（kbps）
-    bytesTotal = 0; // 清零总字节数
-
-    std::ofstream out (m_CSVfileName.c_str (), std::ios::app); // 打开CSV文件流
-
-    out << (Simulator::Now ()).GetSeconds () << "," // 写入当前仿真时间
-        << kbs << "," // 写入吞吐量
-        << packetsReceived << "," // 写入收到的数据包数量
-        << m_nSinks << "," // 写入汇聚节点数量
-        << m_protocolName << "," // 写入协议名称
-        << std::endl; // 换行
-
-    out.close (); // 关闭文件流
-    packetsReceived = 0; // 清零收到的数据包数量
-    Simulator::Schedule (Seconds (1.0), &Experiment::CheckThroughput, this); // 定时调度下一次检查吞吐量
-}
-
 std::string
 Experiment::CommandSetup (int argc, char **argv) // 命令设置函数
 {
     CommandLine cmd (__FILE__); // 创建命令行对象
     cmd.AddValue ("CSVfileName", "The name of the CSV output file name", m_CSVfileName); // 添加CSV文件名参数
     cmd.AddValue ("traceMobility", "Enable mobility tracing", m_traceMobility); // 添加移动性跟踪标志参数
-    cmd.AddValue ("protocol", "1=OLSR;2=AODV;3=DSDV;4=DSR", m_protocol); // 添加协议类型参数
+    cmd.AddValue ("protocol", "1=OLSR;2=AODV;3=DSDV;4=DSR;5=AODVBHSF", m_protocol); // 添加协议类型参数
     cmd.Parse (argc, argv); // 解析命令行参数
     return m_CSVfileName; // 返回CSV文件名
 }
@@ -587,15 +549,15 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes)
     EnergySourceContainer sources = basicSourceHelper.Install (wwsnNodes); // 安装能量源
 
     WifiRadioEnergyModelHelper radioEnergyHelper; // 无线电能量模型助手
-    radioEnergyHelper.Set ("TxCurrentA", DoubleValue (0.0174)); // 设置发送电流
-    radioEnergyHelper.Set ("RxCurrentA", DoubleValue (0.0174));
+    radioEnergyHelper.Set ("TxCurrentA", DoubleValue (0.1)); // 设置发送电流
+    radioEnergyHelper.Set ("RxCurrentA", DoubleValue (0.1));
     DeviceEnergyModelContainer deviceModels = radioEnergyHelper.Install (devices, sources); // 安装设备能量模型
 
     MobilityHelper mobilityAdhoc; // 创建移动性助手
     ObjectFactory pos; // 创建对象工厂
     pos.SetTypeId ("ns3::RandomRectanglePositionAllocator"); // 设置位置分配器类型
-    pos.Set ("X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=3.0]")); // 设置X轴均匀随机分布
-    pos.Set ("Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=3.0]")); // 设置Y轴均匀随机分布
+    pos.Set ("X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=300.0]")); // 设置X轴均匀随机分布
+    pos.Set ("Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=300.0]")); // 设置Y轴均匀随机分布
 
     Ptr<PositionAllocator> taPositionAlloc = pos.Create ()->GetObject<PositionAllocator> (); // 创建位置分配器对象
 
@@ -625,9 +587,22 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes)
     OlsrHelper olsr; // 创建OLSR助手
     DsdvHelper dsdv; // 创建DSDV助手
     DsrHelper dsr; // 创建DSR助手
+    AodvBHSFHelper aodvbhsf; //AODV with blackhole and selecting forwarding
+    
     DsrMainHelper dsrMain; // 创建DSR主助手
     Ipv4ListRoutingHelper list; // 创建IPv4路由助手
     InternetStackHelper internet; // 创建互联网协议栈助手
+    if (m_protocol < 5) // 如果协议类型小于4
+    {
+        internet.Install (wwsnNodes); // 安装互联网协议栈
+    }
+    Ipv4AddressHelper ipv4;
+    NS_LOG_INFO ("Assign IP Addresses.");
+    ipv4.SetBase ("10.1.1.0", "255.255.255.0");
+    Ipv4InterfaceContainer adhocInterfaces = ipv4.Assign (devices);
+
+    aodvbhsf.SetMaliciousNodes(wwsnNodes, 0.1, 0); //调整恶意节点比例
+
     switch (m_protocol) // 根据协议类型选择路由协议
     {
         case 1:
@@ -643,27 +618,27 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes)
             m_protocolName = "DSDV"; // 设置协议名称为DSDV
             break;
         case 4:
+            list.Add (aodvbhsf, 100); 
+            m_protocolName = "AODVBHSF"; // 设置协议名称为DSR
+            break;
+        case 5:
             m_protocolName = "DSR"; // 设置协议名称为DSR
             break;
         default:
             NS_FATAL_ERROR ("No such protocol:" << m_protocol); // 输出错误信息，协议类型不存在
     }
 
-    if (m_protocol < 4) // 如果协议类型小于4
+    if (m_protocol < 5) // 如果协议类型小于4
     {
         internet.SetRoutingHelper (list); // 设置互联网协议栈的路由助手
-        internet.Install (wwsnNodes); // 安装互联网协议栈
     }
-    else if (m_protocol == 4) // 如果协议类型等于4
+    else if (m_protocol == 5) // 如果协议类型等于4
     {
         internet.Install (wwsnNodes); // 安装互联网协议栈
         dsrMain.Install (dsr, wwsnNodes); // 安装DSR主助手
     }
 
-    Ipv4AddressHelper ipv4;
-    NS_LOG_INFO ("Assign IP Addresses.");
-    ipv4.SetBase ("10.1.1.0", "255.255.255.0");
-    Ipv4InterfaceContainer adhocInterfaces = ipv4.Assign (devices);
+    
 
     for (int i = 0; i < n_Nodes; i++) // 循环设置RemainingEnergy
     {
@@ -671,6 +646,8 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes)
             DynamicCast<BasicEnergySource> (sources.Get (i));
         basicSourcePtr->TraceConnectWithoutContext (
             "RemainingEnergy", MakeCallback (&RemainingEnergy));
+
+
     }
 
     
@@ -707,7 +684,7 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes)
 
     NS_LOG_INFO ("Run Simulation."); // 输出运行仿真信息
 
-    CheckThroughput (); // 检查吞吐量
+    
 
     std::string filename = expname + "/pcap/wwsn";
     wifiPhy.EnablePcapAll (filename);
@@ -733,14 +710,17 @@ int
 main (int argc, char *argv[]) // 主函数
 {
 
-    ns3::LogComponentEnable("PropagationLossModel", ns3::LOG_LEVEL_DEBUG);
+    ns3::LogComponentEnable("AODVWITHBHANDSF", ns3::LOG_LEVEL_DEBUG);
     LogComponentEnable(expname0, LOG_ALL);
     Experiment experiment; // 创建Experiment对象
-    std::string expname = "20241025_1_Exp";
-    const char* folder0 = "20241025_1_Exp";
+    std::string expname = "20241029_2_Exp";
+    const char* folder0 = "20241029_2_Exp";
     mkdir(folder0, 0777);
-    const char* folder1 = "20241025_1_Exp/pcap";
+    const char* folder1 = "20241029_2_Exp/pcap";
     mkdir(folder1, 0777);
+
+
+    // CheckThroughput
     std::string CSVfileName = expname + "/experiment"; // 调用命令设置函数获取CSV文件名
 
     //清空上一个输出文件并写入列标题

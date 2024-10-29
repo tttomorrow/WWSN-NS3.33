@@ -214,6 +214,7 @@ undergroundLoraLoss::DoCalcRxPower (double txPowerDbm,
     double rxPower = txPowerDbm - std::max(lossDb, m_minLoss);
 
     NS_LOG_DEBUG("Calculated Rx Power: " << rxPower << " dBm, distance=" << distance << "m, loss=" << lossDb << "dB, alpha=" << alpha << "dB ,beta=" << beta << "dB");
+    NS_LOG_DEBUG("frequency: " << frequency << " hz, m_mv=" << m_mv << ".");
 
     return rxPower;
     
