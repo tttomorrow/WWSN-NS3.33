@@ -526,7 +526,7 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes)
     wifiPhy.Set ("TxPowerLevels", UintegerValue(1));
     wifiPhy.Set ("TxGain", DoubleValue(0));
     wifiPhy.Set ("RxGain", DoubleValue(0));
-    wifiPhy.Set ("RxSensitivity", DoubleValue(-100)); /*csmmmari -61.8*/
+    wifiPhy.Set ("RxSensitivity", DoubleValue(-80)); /*csmmmari -61.8*/
 
 
     wifiPhy.SetChannel (wifiChannel.Create ()); // 设置WiFi物理层的信道
@@ -588,20 +588,16 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes)
     DsdvHelper dsdv; // 创建DSDV助手
     DsrHelper dsr; // 创建DSR助手
     AodvBHSFHelper aodvbhsf; //AODV with blackhole and selecting forwarding
-    
+    // 调用 SetMaliciousNodes 设置恶意节点
+    double blackholeRatio = 0.1; // 黑洞节点比例，例如 10%
+    double selectiveForwardingRatio = 0.2; // 选择性转发节点比例，例如 20%
+    aodvbhsf.SetMaliciousNodes(wwsnNodes, blackholeRatio, selectiveForwardingRatio); // 使用 wwsnNodes 节点容器
+
+
     DsrMainHelper dsrMain; // 创建DSR主助手
     Ipv4ListRoutingHelper list; // 创建IPv4路由助手
     InternetStackHelper internet; // 创建互联网协议栈助手
-    if (m_protocol < 5) // 如果协议类型小于4
-    {
-        internet.Install (wwsnNodes); // 安装互联网协议栈
-    }
     Ipv4AddressHelper ipv4;
-    NS_LOG_INFO ("Assign IP Addresses.");
-    ipv4.SetBase ("10.1.1.0", "255.255.255.0");
-    Ipv4InterfaceContainer adhocInterfaces = ipv4.Assign (devices);
-
-    aodvbhsf.SetMaliciousNodes(wwsnNodes, 0.1, 0); //调整恶意节点比例
 
     switch (m_protocol) // 根据协议类型选择路由协议
     {
@@ -631,14 +627,18 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes)
     if (m_protocol < 5) // 如果协议类型小于4
     {
         internet.SetRoutingHelper (list); // 设置互联网协议栈的路由助手
+        internet.Install (wwsnNodes); // 安装互联网协议栈
     }
     else if (m_protocol == 5) // 如果协议类型等于4
     {
         internet.Install (wwsnNodes); // 安装互联网协议栈
         dsrMain.Install (dsr, wwsnNodes); // 安装DSR主助手
     }
+    ipv4.SetBase ("10.1.1.0", "255.255.255.0");
+    Ipv4InterfaceContainer adhocInterfaces = ipv4.Assign (devices);
+    NS_LOG_INFO ("Assign IP Addresses.");
 
-    
+
 
     for (int i = 0; i < n_Nodes; i++) // 循环设置RemainingEnergy
     {
@@ -646,11 +646,7 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes)
             DynamicCast<BasicEnergySource> (sources.Get (i));
         basicSourcePtr->TraceConnectWithoutContext (
             "RemainingEnergy", MakeCallback (&RemainingEnergy));
-
-
     }
-
-    
 
     for (int i = 0; i < nSinks; i++) // 循环设置发送节点
     {
@@ -703,14 +699,11 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes)
 }
 
 
-
-
-
 int
 main (int argc, char *argv[]) // 主函数
 {
 
-    ns3::LogComponentEnable("AODVWITHBHANDSF", ns3::LOG_LEVEL_DEBUG);
+    ns3::LogComponentEnable("AODVWITHBHANDSF-helper", ns3::LOG_LEVEL_DEBUG);
     LogComponentEnable(expname0, LOG_ALL);
     Experiment experiment; // 创建Experiment对象
     std::string expname = "20241029_2_Exp";

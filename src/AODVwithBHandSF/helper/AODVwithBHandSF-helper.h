@@ -62,6 +62,8 @@ public:
 private:
   /** the factory to create AODV routing object */
   ObjectFactory m_agentFactory;
+  std::set<uint32_t> m_blackholeNodes;
+  std::set<uint32_t> m_selectiveForwardingNodes;
 };
 
 }

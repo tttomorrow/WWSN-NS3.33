@@ -226,8 +226,8 @@ namespace ns3
       bool m_enableBroadcast;      ///< 指示是否启用广播数据包转发
 
       // 黑洞节点和选择性转发节点标记
-      bool m_isBlackhole;           // 标记是否为黑洞节点
-      bool m_isSelectiveForwarding; // 标记是否为选择性转发节点
+      bool m_isBlackhole = false;           // 标记是否为黑洞节点
+      bool m_isSelectiveForwarding = false; // 标记是否为选择性转发节点
 
       /// IP 协议
       Ptr<Ipv4> m_ipv4;

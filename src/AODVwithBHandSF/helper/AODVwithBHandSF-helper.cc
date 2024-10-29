@@ -28,6 +28,23 @@ AodvBHSFHelper::Create (Ptr<Node> node) const
 {
   Ptr<aodv::AodvBHSFRoutingProtocol> agent = m_agentFactory.Create<aodv::AodvBHSFRoutingProtocol> ();
   node->AggregateObject (agent);
+
+  uint32_t nodeId = node->GetId();
+
+  // 检查节点是否在黑洞节点列表中
+  if (m_blackholeNodes.find(nodeId) != m_blackholeNodes.end())
+  {
+    agent->SetBlackhole(true);
+    // NS_LOG_DEBUG("Node " << nodeId << " set as Blackhole node in Create.");
+  }
+
+  // 检查节点是否在选择性转发节点列表中
+  if (m_selectiveForwardingNodes.find(nodeId) != m_selectiveForwardingNodes.end())
+  {
+    agent->SetSelectiveForwarding(true);
+    // NS_LOG_DEBUG("Node " << nodeId << " set as Selective Forwarding node in Create.");
+  }
+
   return agent;
 }
 
@@ -40,34 +57,28 @@ AodvBHSFHelper::Set (std::string name, const AttributeValue &value)
 void 
 AodvBHSFHelper::SetMaliciousNodes(NodeContainer nodes, double blackholeRatio, double selectiveForwardingRatio)
 {
-  // 随机数生成器
   Ptr<UniformRandomVariable> randomVar = CreateObject<UniformRandomVariable>();
 
   for (NodeContainer::Iterator it = nodes.Begin(); it != nodes.End(); ++it)
   {
     Ptr<Node> node = *it;
-    Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
-    NS_ASSERT_MSG(ipv4, "Ipv4 not installed on node");
-    Ptr<Ipv4RoutingProtocol> proto = ipv4->GetRoutingProtocol();
-    Ptr<aodv::AodvBHSFRoutingProtocol> aodv = DynamicCast<aodv::AodvBHSFRoutingProtocol>(proto);
+    uint32_t nodeId = node->GetId();
 
-    if (aodv)
+    double prob = randomVar->GetValue();
+
+    if (prob < blackholeRatio)
     {
-      // 按照比例随机设置为黑洞或选择性转发节点
-      double prob = randomVar->GetValue();
-      if (prob < blackholeRatio)
-      {
-        aodv->SetBlackhole(true);
-        NS_LOG_UNCOND("Node " << node->GetId() << " set as Blackhole node.");
-      }
-      else if (prob < blackholeRatio + selectiveForwardingRatio)
-      {
-        aodv->SetSelectiveForwarding(true);
-        NS_LOG_UNCOND("Node " << node->GetId() << " set as Selective Forwarding node.");
-      }
+      m_blackholeNodes.insert(nodeId);
+      NS_LOG_DEBUG("Node " << nodeId << " marked for Blackhole.");
+    }
+    else if (prob < blackholeRatio + selectiveForwardingRatio)
+    {
+      m_selectiveForwardingNodes.insert(nodeId);
+      NS_LOG_DEBUG("Node " << nodeId << " marked for Selective Forwarding.");
     }
   }
 }
+
 
 int64_t
 AodvBHSFHelper::AssignStreams (NodeContainer c, int64_t stream)
