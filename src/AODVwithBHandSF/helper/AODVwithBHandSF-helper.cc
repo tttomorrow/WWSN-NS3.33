@@ -6,7 +6,9 @@
 #include "ns3/names.h"
 #include "ns3/ptr.h"
 #include "ns3/ipv4-list-routing.h"
-
+#include <iostream>
+#include <unordered_set>
+#include <random>
 
 namespace ns3
 {
@@ -26,9 +28,17 @@ AodvBHSFHelper::Copy (void) const
 Ptr<Ipv4RoutingProtocol> 
 AodvBHSFHelper::Create (Ptr<Node> node) const
 {
+  // 调用重载的 Create 函数，传入默认值
+  double SetInsertTime = 0.0;
+  return Create(node, SetInsertTime);
+}
+
+Ptr<Ipv4RoutingProtocol> 
+AodvBHSFHelper::Create (Ptr<Node> node, double insertTime) const
+{
   Ptr<aodv::AodvBHSFRoutingProtocol> agent = m_agentFactory.Create<aodv::AodvBHSFRoutingProtocol> ();
   node->AggregateObject (agent);
-
+  agent->SetInsertTime(insertTime);
   uint32_t nodeId = node->GetId();
 
   // 检查节点是否在黑洞节点列表中
@@ -57,24 +67,39 @@ AodvBHSFHelper::Set (std::string name, const AttributeValue &value)
 void 
 AodvBHSFHelper::SetMaliciousNodes(NodeContainer nodes, double blackholeRatio, double selectiveForwardingRatio)
 {
+  
   Ptr<UniformRandomVariable> randomVar = CreateObject<UniformRandomVariable>();
+  std::unordered_set<int> uniqueNumbers;
+  std::random_device rd;  // 随机数种子
+  std::mt19937 gen(rd());  // 使用 Mersenne Twister 算法
+  std::uniform_int_distribution<> dis(1, nodes.GetN()); // 定义随机数分布
+  uint32_t count = ((blackholeRatio + selectiveForwardingRatio) * nodes.GetN());
+  uint32_t randomNumbers[count];
+  NS_LOG_DEBUG("malicious Nodes number" << count << " .");
+  // 生成不重复的随机数
+  while (uniqueNumbers.size() < count) {
+      uniqueNumbers.insert(dis(gen));
+  }
 
-  for (NodeContainer::Iterator it = nodes.Begin(); it != nodes.End(); ++it)
+  // 将生成的随机数保存到数组中
+  uint32_t index = 0;
+  for (int number : uniqueNumbers) {
+      randomNumbers[index++] = number;
+      NS_LOG_DEBUG("randomNumbers" << number << " .");
+  }
+  for (uint32_t i = 0; i < count; i++)
   {
-    Ptr<Node> node = *it;
-    uint32_t nodeId = node->GetId();
-
-    double prob = randomVar->GetValue();
-
-    if (prob < blackholeRatio)
+    int BHcount = 0;
+    if (BHcount < blackholeRatio * nodes.GetN())
     {
-      m_blackholeNodes.insert(nodeId);
-      NS_LOG_DEBUG("Node " << nodeId << " marked for Blackhole.");
+      m_blackholeNodes.insert(randomNumbers[i]);
+      BHcount++;
+      NS_LOG_DEBUG("Node " << randomNumbers[i] << " marked for Blackhole.");
     }
-    else if (prob < blackholeRatio + selectiveForwardingRatio)
+    else
     {
-      m_selectiveForwardingNodes.insert(nodeId);
-      NS_LOG_DEBUG("Node " << nodeId << " marked for Selective Forwarding.");
+      m_selectiveForwardingNodes.insert(randomNumbers[i]);
+      NS_LOG_DEBUG("Node " << randomNumbers[i] << " marked for Selective Forwarding.");
     }
   }
 }

@@ -36,6 +36,7 @@ public:
    * \todo support installing AODV on the subset of all available IP interfaces
    */
   virtual Ptr<Ipv4RoutingProtocol> Create (Ptr<Node> node) const;
+  Ptr<Ipv4RoutingProtocol> Create(Ptr<Node> node, double insertTime) const;
   /**
    * \param name the name of the attribute to set
    * \param value the value of the attribute to set.

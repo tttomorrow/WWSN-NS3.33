@@ -177,6 +177,7 @@ namespace ns3
           m_rreqRateLimitTimer(Timer::CANCEL_ON_DESTROY),
           m_rerrRateLimitTimer(Timer::CANCEL_ON_DESTROY),
           m_lastBcastTime(Seconds(0))
+          
     {
       m_nb.SetCallback(MakeCallback(&AodvBHSFRoutingProtocol::SendRerrWhenBreaksLinkToNextHop, this));
     }
@@ -383,7 +384,7 @@ namespace ns3
       NS_LOG_FUNCTION(this << header << (oif ? oif->GetIfIndex() : 0));
       if (!p)
       {
-        NS_LOG_DEBUG("Packet is == 0");
+        // NS_LOG_DEBUG("Packet is == 0");
         return LoopbackRoute(header, oif); // later
       }
       if (m_socketAddresses.empty())
@@ -401,10 +402,10 @@ namespace ns3
       {
         route = rt.GetRoute();
         NS_ASSERT(route != 0);
-        NS_LOG_DEBUG("Exist route to " << route->GetDestination() << " from interface " << route->GetSource());
+        // NS_LOG_DEBUG("Exist route to " << route->GetDestination() << " from interface " << route->GetSource());
         if (oif != 0 && route->GetOutputDevice() != oif)
         {
-          NS_LOG_DEBUG("Output device doesn't match. Dropped.");
+          // NS_LOG_DEBUG("Output device doesn't match. Dropped.");
           sockerr = Socket::ERROR_NOROUTETOHOST;
           return Ptr<Ipv4Route>();
         }
@@ -418,7 +419,7 @@ namespace ns3
       // routed to loopback, received from loopback and passed to RouteInput (see below)
       uint32_t iif = (oif ? m_ipv4->GetInterfaceForDevice(oif) : -1);
       DeferredRouteOutputTagwithBHFS tag(iif);
-      NS_LOG_DEBUG("Valid Route not found");
+      // NS_LOG_DEBUG("Valid Route not found");
       if (!p->PeekPacketTag(tag))
       {
         p->AddPacketTag(tag);
@@ -503,7 +504,7 @@ namespace ns3
           {
             if (m_dpd.IsDuplicate(p, header))
             {
-              NS_LOG_DEBUG("Duplicated packet " << p->GetUid() << " from " << origin << ". Drop.");
+              // NS_LOG_DEBUG("Duplicated packet " << p->GetUid() << " from " << origin << ". Drop.");
               return true;
             }
             UpdateRouteLifeTime(origin, m_activeRouteTimeout);
@@ -544,12 +545,12 @@ namespace ns3
               }
               else
               {
-                NS_LOG_DEBUG("No route to forward broadcast. Drop packet " << p->GetUid());
+                // NS_LOG_DEBUG("No route to forward broadcast. Drop packet " << p->GetUid());
               }
             }
             else
             {
-              NS_LOG_DEBUG("TTL exceeded. Drop packet " << p->GetUid());
+              // NS_LOG_DEBUG("TTL exceeded. Drop packet " << p->GetUid());
             }
             return true;
           }
@@ -601,15 +602,15 @@ namespace ns3
       m_routingTable.Purge();
       RoutingTableEntry toDst;
 
-      if (IsSelectiveForwardingNode() && (rand() % 10 <= 3))
+      if ((IsSelectiveForwardingNode() && (rand() % 10 <= 3)) && IsmaliciousInsertTime())
       {
-        NS_LOG_DEBUG("Drop packet " << p->GetUid() << " because m_isSelectiveForwarding.");
+        NS_LOG_DEBUG("time:"<< (Simulator::Now ()).GetSeconds () << ", Drop packet " << p->GetUid() << " because m_isSelectiveForwarding.");
         return false;
       }
 
-      if (IsBlackholeNode())
+      if (IsBlackholeNode() && IsmaliciousInsertTime())
       {
-        NS_LOG_DEBUG("Drop packet " << p->GetUid() << " because m_isBlackhole.");
+        NS_LOG_DEBUG("time:"<< (Simulator::Now ()).GetSeconds () <<", Drop packet " << p->GetUid() << " because m_isBlackhole.");
         return false;
       }
 
@@ -649,13 +650,13 @@ namespace ns3
           if (toDst.GetValidSeqNo())
           {
             SendRerrWhenNoRouteToForward(dst, toDst.GetSeqNo(), origin);
-            NS_LOG_DEBUG("Drop packet " << p->GetUid() << " because no route to forward it.");
+            // NS_LOG_DEBUG("Drop packet " << p->GetUid() << " because no route to forward it.");
             return false;
           }
         }
       }
       NS_LOG_LOGIC("route not found to " << dst << ". Send RERR message.");
-      NS_LOG_DEBUG("Drop packet " << p->GetUid() << " because no route to forward it.");
+      // NS_LOG_DEBUG("Drop packet " << p->GetUid() << " because no route to forward it.");
       SendRerrWhenNoRouteToForward(dst, 0, origin);
       return false;
     }
@@ -1085,7 +1086,7 @@ namespace ns3
         {
           destination = iface.GetBroadcast();
         }
-        NS_LOG_DEBUG("Send RREQ with id " << rreqHeader.GetId() << " to socket");
+        // NS_LOG_DEBUG("Send RREQ with id " << rreqHeader.GetId() << " to socket");
         m_lastBcastTime = Simulator::Now();
         Simulator::Schedule(Time(MilliSeconds(m_uniformRandomVariable->GetInteger(0, 10))), &AodvBHSFRoutingProtocol::SendTo, this, socket, packet, destination);
       }
@@ -1149,14 +1150,14 @@ namespace ns3
       {
         NS_ASSERT_MSG(false, "Received a packet from an unknown socket");
       }
-      NS_LOG_DEBUG("AODV node " << this << " received a AODV packet from " << sender << " to " << receiver);
+      // NS_LOG_DEBUG("AODV node " << this << " received a AODV packet from " << sender << " to " << receiver);
 
       UpdateRouteToNeighbor(sender, receiver);
       TypeHeader tHeader(AODVTYPE_RREQ);
       packet->RemoveHeader(tHeader);
       if (!tHeader.IsValid())
       {
-        NS_LOG_DEBUG("AODV message " << packet->GetUid() << " with unknown type received: " << tHeader.Get() << ". Drop");
+        // NS_LOG_DEBUG("AODV message " << packet->GetUid() << " with unknown type received: " << tHeader.Get() << ". Drop");
         return; // drop
       }
       switch (tHeader.Get())
@@ -1193,7 +1194,7 @@ namespace ns3
       {
         if (rt.GetFlag() == VALID)
         {
-          NS_LOG_DEBUG("Updating VALID route");
+          // NS_LOG_DEBUG("Updating VALID route");
           rt.SetRreqCnt(0);
           rt.SetLifeTime(std::max(lifetime, rt.GetLifeTime()));
           m_routingTable.Update(rt);
@@ -1240,6 +1241,12 @@ namespace ns3
       m_isBlackhole = isBlackhole;
     }
 
+    void
+    AodvBHSFRoutingProtocol::SetInsertTime(double time)
+    {
+      maliciousInsertTime = time;
+    }
+
     // 设置选择性转发节点标志
     void
     AodvBHSFRoutingProtocol::SetSelectiveForwarding(bool isSelectiveForwarding)
@@ -1261,6 +1268,17 @@ namespace ns3
       return m_isSelectiveForwarding;
     }
 
+    // 检查是否到达恶意节点注入时间
+    bool
+    AodvBHSFRoutingProtocol::IsmaliciousInsertTime () const
+    {
+      if ((Simulator::Now ()).GetSeconds () > maliciousInsertTime)
+      {
+        return true;
+      }
+      return false;
+    }
+
     void AodvBHSFRoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address src)
     {
       NS_LOG_FUNCTION(this);       // 日志记录函数调用
@@ -1274,7 +1292,7 @@ namespace ns3
       {
         if (toPrev.IsUnidirectional()) // 若为单向路径
         {
-          NS_LOG_DEBUG("Ignoring RREQ from node in blacklist");
+          // NS_LOG_DEBUG("Ignoring RREQ from node in blacklist");
           return;
         }
       }
@@ -1285,7 +1303,7 @@ namespace ns3
       // 检查是否收到过相同的RREQ，若是则丢弃
       if (m_rreqIdCache.IsDuplicate(origin, id))
       {
-        NS_LOG_DEBUG("Ignoring RREQ due to duplicate");
+        // NS_LOG_DEBUG("Ignoring RREQ due to duplicate");
         return;
       }
 
@@ -1331,7 +1349,7 @@ namespace ns3
       RoutingTableEntry toNeighbor;
       if (!m_routingTable.LookupRoute(src, toNeighbor))
       {
-        NS_LOG_DEBUG("Neighbor:" << src << " not found in routing table. Creating an entry");
+        // NS_LOG_DEBUG("Neighbor:" << src << " not found in routing table. Creating an entry");
         Ptr<NetDevice> dev = m_ipv4->GetNetDevice(m_ipv4->GetInterfaceForAddress(receiver));
         RoutingTableEntry newEntry(dev, src, false, rreqHeader.GetOriginSeqno(),
                                    m_ipv4->GetAddress(m_ipv4->GetInterfaceForAddress(receiver), 0),
@@ -1363,7 +1381,7 @@ namespace ns3
       //   {
       //     // 伪造RREP（路由回复）消息，声称自己为最短路径
       //     m_routingTable.LookupRoute(origin, toOrigin);
-      //     NS_LOG_DEBUG("Send reply since I am the destination");
+      //     // NS_LOG_DEBUG("Send reply since I am the destination");
       //     SendReply(rreqHeader, toOrigin); // 发送RREP
       //     return;
       //   }
@@ -1371,11 +1389,11 @@ namespace ns3
 
       if (IsBlackholeNode())
       { // 若节点为恶意节点检查是否为黑洞节点
-        NS_LOG_INFO("Blackhole node " << m_ipv4->GetAddress(0, 0).GetLocal() << " received RREQ and sending fake RREP");
+        // NS_LOG_DEBUG( "time:"<< (Simulator::Now ()).GetSeconds () << "Blackhole node " << m_ipv4->GetAddress(0, 0).GetLocal() << " received RREQ and sending fake RREP");
 
         // 伪造RREP（路由回复）消息，声称自己为最短路径
         m_routingTable.LookupRoute(origin, toOrigin);
-        NS_LOG_DEBUG("Send reply since I am the destination");
+        // NS_LOG_DEBUG("Send reply since I am the destination");
         SendReply(rreqHeader, toOrigin); // 发送RREP
         return;
       }
@@ -1384,7 +1402,7 @@ namespace ns3
       if (IsMyOwnAddress(rreqHeader.GetDst()))
       {
         m_routingTable.LookupRoute(origin, toOrigin);
-        NS_LOG_DEBUG("Send reply since I am the destination");
+        // NS_LOG_DEBUG("Send reply since I am the destination");
         SendReply(rreqHeader, toOrigin); // 发送RREP
         return;
       }
@@ -1395,7 +1413,7 @@ namespace ns3
       {
         if (toDst.GetNextHop() == src) // 若下一跳是源节点则丢弃RREQ
         {
-          NS_LOG_DEBUG("Drop RREQ from " << src << ", dest next hop " << toDst.GetNextHop());
+          // NS_LOG_DEBUG("Drop RREQ from " << src << ", dest next hop " << toDst.GetNextHop());
           return;
         }
         if ((rreqHeader.GetUnknownSeqno() || (int32_t(toDst.GetSeqNo()) - int32_t(rreqHeader.GetDstSeqno()) >= 0)) && toDst.GetValidSeqNo())
@@ -1415,7 +1433,7 @@ namespace ns3
       p->RemovePacketTag(tag); // 移除TTL标签
       if (tag.GetTtl() < 2)    // 若TTL小于2则丢弃
       {
-        NS_LOG_DEBUG("TTL exceeded. Drop RREQ origin " << src << " destination " << dst);
+        // NS_LOG_DEBUG("TTL exceeded. Drop RREQ origin " << src << " destination " << dst);
         return;
       }
 
@@ -1711,7 +1729,7 @@ namespace ns3
       p->RemovePacketTag(tag);
       if (tag.GetTtl() < 2)
       {
-        NS_LOG_DEBUG("TTL exceeded. Drop RREP destination " << dst << " origin " << rrepHeader.GetOrigin());
+        // NS_LOG_DEBUG("TTL exceeded. Drop RREP destination " << dst << " origin " << rrepHeader.GetOrigin());
         return;
       }
 
@@ -1858,7 +1876,7 @@ namespace ns3
         NS_LOG_LOGIC("route discovery to " << dst << " has been attempted RreqRetries (" << m_rreqRetries << ") times with ttl " << m_netDiameter);
         m_addressReqTimer.erase(dst);
         m_routingTable.DeleteRoute(dst);
-        NS_LOG_DEBUG("Route not found. Drop all packets with dst " << dst);
+        // NS_LOG_DEBUG("Route not found. Drop all packets with dst " << dst);
         m_queue.DropPacketWithDst(dst);
         return;
       }
@@ -1870,7 +1888,7 @@ namespace ns3
       }
       else
       {
-        NS_LOG_DEBUG("Route down. Stop search. Drop packet with destination " << dst);
+        // NS_LOG_DEBUG("Route down. Stop search. Drop packet with destination " << dst);
         m_addressReqTimer.erase(dst);
         m_routingTable.DeleteRoute(dst);
         m_queue.DropPacketWithDst(dst);
@@ -1885,7 +1903,7 @@ namespace ns3
       if (m_lastBcastTime > Time(Seconds(0)))
       {
         offset = Simulator::Now() - m_lastBcastTime;
-        NS_LOG_DEBUG("Hello deferred due to last bcast at:" << m_lastBcastTime);
+        // NS_LOG_DEBUG("Hello deferred due to last bcast at:" << m_lastBcastTime);
       }
       else
       {
@@ -1965,13 +1983,14 @@ namespace ns3
       QueueEntry queueEntry;
 
       // 检查当前节点是否是黑洞攻击节点
-      if (IsBlackholeNode())
+      if (IsBlackholeNode() && IsmaliciousInsertTime())
       {
-        NS_LOG_INFO("Blackhole node " << m_ipv4->GetAddress(0, 0).GetLocal() << " is dropping the packet to " << dst);
+        
         // 直接丢弃所有目标为 dst 的数据包
         while (m_queue.Dequeue(dst, queueEntry))
         {
-          NS_LOG_INFO("Blackhole attack: Dropping packet from queue");
+          // NS_LOG_INFO("Blackhole attack: Dropping packet from queue");
+          NS_LOG_DEBUG("time:"<< (Simulator::Now ()).GetSeconds () << ", Blackhole node " << " is dropping the packet to " << dst);
           // 不调用 ucb，直接丢弃
           return;
         }
@@ -1984,7 +2003,7 @@ namespace ns3
         Ptr<Packet> p = ConstCast<Packet>(queueEntry.GetPacket());
         if (p->RemovePacketTag(tag) && tag.GetInterface() != -1 && tag.GetInterface() != m_ipv4->GetInterfaceForDevice(route->GetOutputDevice()))
         {
-          NS_LOG_DEBUG("Output device doesn't match. Dropped.");
+          // NS_LOG_DEBUG("Output device doesn't match. Dropped.");
           return;
         }
         UnicastForwardCallback ucb = queueEntry.GetUnicastForwardCallback();
@@ -2222,7 +2241,7 @@ namespace ns3
       {
         m_htimer.SetFunction(&AodvBHSFRoutingProtocol::HelloTimerExpire, this);
         startTime = m_uniformRandomVariable->GetInteger(0, 100);
-        NS_LOG_DEBUG("Starting at time " << startTime << "ms");
+        // NS_LOG_DEBUG("Starting at time " << startTime << "ms");
         m_htimer.Schedule(MilliSeconds(startTime));
       }
       Ipv4RoutingProtocol::DoInitialize();

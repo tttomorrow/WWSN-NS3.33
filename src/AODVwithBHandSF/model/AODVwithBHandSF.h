@@ -60,6 +60,7 @@ namespace ns3
       static TypeId GetTypeId(void);
       static const uint32_t AODV_PORT; ///< AODV 协议的端口号
 
+      double maliciousInsertTime;
       /// 构造函数
       AodvBHSFRoutingProtocol();
       virtual ~AodvBHSFRoutingProtocol(); ///< 析构函数
@@ -190,10 +191,12 @@ namespace ns3
       int64_t AssignStreams(int64_t stream);
 
       void SetBlackhole(bool isBlackhole);                     ///< 设置为黑洞节点
+      void SetInsertTime(double time);
       void SetSelectiveForwarding(bool isSelectiveForwarding); ///< 设置为选择性转发节点
 
       bool IsBlackholeNode() const;           ///< 检查是否为黑洞节点
       bool IsSelectiveForwardingNode() const; ///< 检查是否为选择性转发节点
+      bool IsmaliciousInsertTime() const;
 
     protected:
       virtual void DoInitialize(void); ///< 初始化协议
@@ -228,6 +231,8 @@ namespace ns3
       // 黑洞节点和选择性转发节点标记
       bool m_isBlackhole = false;           // 标记是否为黑洞节点
       bool m_isSelectiveForwarding = false; // 标记是否为选择性转发节点
+      
+      
 
       /// IP 协议
       Ptr<Ipv4> m_ipv4;

@@ -30,11 +30,11 @@
 using namespace ns3;
 using namespace dsr;
 
-const char expname0[] = "20241029_2_Exp";
+const char expname0[] = "20241101_drop20_t50_i0_n50";
 
 NS_LOG_COMPONENT_DEFINE (expname0); 
 
-std::string expname = "20241029_2_Exp";
+std::string expname = "20241101_drop20_t50_i0_n50";
 
 void ClearFile(const std::string &filename) {
     std::ofstream ofs;
@@ -142,15 +142,16 @@ void MonitorSnifferRx (std::string context, Ptr<const Packet> packet, uint16_t c
     static bool first = true;
     if (first) {
         ClearFile(filename);
-        f << "PacketType, SequenceNumber, listener,SrcNodeId, SNR, SignalPower,NoisePower,PacketSize,ChannelFreqMhz,MpduRefNumber,StaId\n";
+        f << "Time, PacketType, SequenceNumber, listener,SrcNodeId, SNR, SignalPower,NoisePower,PacketSize,ChannelFreqMhz,MpduRefNumber,StaId\n";
         first = false;
     }
-    
+    double currenttime = (Simulator::Now ()).GetSeconds (); // 下一次发送的时间
     PacketInfo info = HandlePacket(packet);
     uint32_t listenerNodeId = GetNodeIdFromContext(context) + 1;
        
     // 写入参数值到 CSV 文件
-    f << info.packetType << ","
+    f << currenttime << ","
+      << info.packetType << ","
       << info.SequenceNumber << ","
       << listenerNodeId << ","
       << info.srcNodeId << ","
@@ -175,16 +176,17 @@ void MonitorSnifferTx (std::string context, Ptr<const Packet> packet, uint16_t c
     static bool first = true;
     if (first) {
         ClearFile(filename);
-        f << "PacketType,SequenceNumber,listener,SrcNodeId,PacketSize,ChannelFreqMhz,MpduRefNumber,StaId\n";
+        f << "Time, PacketType,SequenceNumber,listener,SrcNodeId,PacketSize,ChannelFreqMhz,MpduRefNumber,StaId\n";
         first = false;
     }
-
+    double currenttime = (Simulator::Now ()).GetSeconds (); // 下一次发送的时间
     PacketInfo info = HandlePacket(packet);
     uint32_t listenerNodeId = GetNodeIdFromContext(context);
     // NS_LOG_INFO ("Received packet from IP: " << sourceIp << " to IP: " << destIp);
     
     // 写入参数值到 CSV 文件
-    f << info.packetType << ","
+    f << currenttime << ","
+      << info.packetType << ","
       << info.SequenceNumber <<","
       << listenerNodeId << ","
       << info.srcNodeId << ","
@@ -412,6 +414,7 @@ MyApp::ScheduleTx (void)
     if (m_running)  // 如果应用程序正在运行
     {
         Time tNext (Seconds (m_packetSize * 8 / static_cast<double> (m_dataRate.GetBitRate ())));  // 下一次发送的时间
+        // Time tNext = Seconds(1.0); // 下一次发送的时间
         m_sendEvent = Simulator::Schedule (tNext, &MyApp::SendPacket, this, m_source, m_peer, mac_source, mac_peer);  // 定时发送数据包
     }
 }
@@ -590,7 +593,7 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes)
     AodvBHSFHelper aodvbhsf; //AODV with blackhole and selecting forwarding
     // 调用 SetMaliciousNodes 设置恶意节点
     double blackholeRatio = 0.1; // 黑洞节点比例，例如 10%
-    double selectiveForwardingRatio = 0.2; // 选择性转发节点比例，例如 20%
+    double selectiveForwardingRatio = 0; // 选择性转发节点比例，例如 20%
     aodvbhsf.SetMaliciousNodes(wwsnNodes, blackholeRatio, selectiveForwardingRatio); // 使用 wwsnNodes 节点容器
 
 
@@ -703,16 +706,19 @@ int
 main (int argc, char *argv[]) // 主函数
 {
 
-    ns3::LogComponentEnable("AODVWITHBHANDSF-helper", ns3::LOG_LEVEL_DEBUG);
-    LogComponentEnable(expname0, LOG_ALL);
+    
     Experiment experiment; // 创建Experiment对象
-    std::string expname = "20241029_2_Exp";
-    const char* folder0 = "20241029_2_Exp";
+    std::string expname = "20241101_drop20_t50_i0_n50";
+    const char* folder0 = "20241101_drop20_t50_i0_n50";
     mkdir(folder0, 0777);
-    const char* folder1 = "20241029_2_Exp/pcap";
+    const char* folder1 = "20241101_drop20_t50_i0_n50/pcap";
     mkdir(folder1, 0777);
 
-
+    LogComponentEnable("soilMoistureUpdater", ns3::LOG_LEVEL_DEBUG);
+    LogComponentEnable("AODVWITHBHANDSF", ns3::LOG_LEVEL_DEBUG);
+    LogComponentEnable("AODVWITHBHANDSF-helper", ns3::LOG_LEVEL_DEBUG);
+    LogComponentEnable(expname0, LOG_ALL);
+    
     // CheckThroughput
     std::string CSVfileName = expname + "/experiment"; // 调用命令设置函数获取CSV文件名
 
@@ -731,6 +737,7 @@ main (int argc, char *argv[]) // 主函数
     double simtime = 50.0;
     int num_nodes = 50;  
     experiment.Run (nSinks, CSVfileName, simtime, num_nodes); // 运行实验
+
 
 
     return 0; // 返回0表示成功
