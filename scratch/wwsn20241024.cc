@@ -705,8 +705,6 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes)
 int
 main (int argc, char *argv[]) // 主函数
 {
-
-    
     Experiment experiment; // 创建Experiment对象
     std::string expname = "20241101_drop20_t50_i0_n50";
     const char* folder0 = "20241101_drop20_t50_i0_n50";
@@ -721,6 +719,7 @@ main (int argc, char *argv[]) // 主函数
     
     // CheckThroughput
     std::string CSVfileName = expname + "/experiment"; // 调用命令设置函数获取CSV文件名
+ 
 
     //清空上一个输出文件并写入列标题
     std::ofstream out (CSVfileName.c_str ());
