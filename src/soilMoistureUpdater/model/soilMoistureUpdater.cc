@@ -28,15 +28,11 @@ void SoilMoistureUpdater::ScheduleNextUpdate() {
 }
 
 void SoilMoistureUpdater::UpdateMoisture() {
-    // 随机选择上升或下降
-    if (rand() % 2 == 0) {
-        // 含水量上升，增量较大
-        m_mv += 0.15; // 上升幅度
-    } else {
-        // 含水量下降，增量较小
-        m_mv -= 0.05; // 下降幅度
-    }
-
+    // 选择含水量上升或下降
+    double Mv_change[] = {0,0,0.25,0.05,-0.05,-0.05,-0.05,-0.05,-0.05,-0.05};
+    int count = 0;
+    m_mv = m_mv + Mv_change[count];
+    count++;
     // 确保含水量在范围内
     m_mv = std::max(m_minMv, std::min(m_maxMv, m_mv));
     

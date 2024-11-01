@@ -30,11 +30,17 @@
 using namespace ns3;
 using namespace dsr;
 
-const char expname0[] = "20241101_drop20_t50_i0_n50";
 
-NS_LOG_COMPONENT_DEFINE (expname0); 
+NS_LOG_COMPONENT_DEFINE ("wwsn20241024"); 
 
-std::string expname = "20241101_drop20_t50_i0_n50";
+extern std::string wwsn20241024snifferExpname;
+std::string wwsn20241024snifferExpname = "wwsn20241024snifferExpname";
+// 定义全局变量来统计数据包数量和丢失数量
+std::map<uint32_t, uint32_t> packetsReceivedList; // 每个节点接收到的数据包数量
+std::map<uint32_t, uint32_t> packetsSentPerNode; // 每个节点发送的数据包数量
+std::map<uint32_t, uint32_t> packetsForwardedList; // 每个节点转发的数据包数量
+std::map<uint32_t, uint32_t> packetsReceivedFromList; // 从每个节点接收到的数据包数量
+std::map<uint32_t, double> energyConsumedList; // 每个节点消耗的能量
 
 void ClearFile(const std::string &filename) {
     std::ofstream ofs;
@@ -43,7 +49,7 @@ void ClearFile(const std::string &filename) {
 }
 
 void RemainingEnergy(double oldValue, double remainingEnergy) {
-    std::string filename = expname + "/remaining_energy.csv";
+    std::string filename = wwsn20241024snifferExpname + "/remaining_energy.csv";
     static std::fstream f(filename, std::ios::out | std::ios::app);
     if (!f.is_open()) {
         std::cerr << "Error opening file" << std::endl;
@@ -69,16 +75,7 @@ uint32_t GetNodeIdFromMacAddress(Mac48Address mac) {
     return nodeId;
 }
 
-// 从 context 字符串中提取节点ID并加1
-uint32_t GetNodeIdFromContext(const std::string &context) {
-    size_t startPos = context.find("/NodeList/") + 10;
-    size_t endPos = context.find("/", startPos);
-    if (startPos != std::string::npos && endPos != std::string::npos) {
-        uint32_t nodeId = std::stoi(context.substr(startPos, endPos - startPos));
-        return nodeId + 1;
-    }
-    return 0; // 未找到节点ID，返回0
-}
+
 struct PacketInfo {
     std::string packetType;
     Mac48Address srcMac;
@@ -130,9 +127,28 @@ PacketInfo HandlePacket(Ptr<const Packet> packet) {
     return info;
 }
 
-void MonitorSnifferRx (std::string context, Ptr<const Packet> packet, uint16_t channelFreqMhz, WifiTxVector txVector, MpduInfo aMpdu, SignalNoiseDbm signalNoise, uint16_t staId)
+
+// 从 context 字符串中提取节点ID并加1
+uint32_t GetNodeIdFromContext(const std::string &context) {
+    size_t startPos = context.find("/NodeList/") + 10;
+    size_t endPos = context.find("/", startPos);
+    if (startPos != std::string::npos && endPos != std::string::npos) {
+        uint32_t nodeId = std::stoi(context.substr(startPos, endPos - startPos));
+        return nodeId + 1;
+    }
+    return 0; // 未找到节点ID，返回0
+}
+
+void 
+MonitorSnifferRx ( std::string context, 
+                    Ptr<const Packet> packet, 
+                    uint16_t channelFreqMhz, 
+                    WifiTxVector txVector, 
+                    MpduInfo aMpdu, 
+                    SignalNoiseDbm signalNoise, 
+                    uint16_t staId)
 {
-    std::string filename = expname + "/MonitorSnifferRx.csv";
+    std::string filename = wwsn20241024snifferExpname + "/MonitorSnifferRx.csv";
     static std::fstream f (filename, std::ios::out | std::ios::app);
     if (!f.is_open()) {
         std::cerr << "Error opening file" << std::endl;
@@ -148,25 +164,31 @@ void MonitorSnifferRx (std::string context, Ptr<const Packet> packet, uint16_t c
     double currenttime = (Simulator::Now ()).GetSeconds (); // 下一次发送的时间
     PacketInfo info = HandlePacket(packet);
     uint32_t listenerNodeId = GetNodeIdFromContext(context) + 1;
-       
+    
     // 写入参数值到 CSV 文件
     f << currenttime << ","
-      << info.packetType << ","
-      << info.SequenceNumber << ","
-      << listenerNodeId << ","
-      << info.srcNodeId << ","
-      << signalNoise.signal - signalNoise.noise << ","
-      << signalNoise.signal << ","
-      << signalNoise.noise << ","
-      << packet->GetSize() << ","
-      << channelFreqMhz << ","
-      << aMpdu.mpduRefNumber << ","
-      << staId << "\n";
-}
+    << info.packetType << ","
+    << info.SequenceNumber << ","
+    << listenerNodeId << ","
+    << info.srcNodeId << ","
+    << signalNoise.signal - signalNoise.noise << ","
+    << signalNoise.signal << ","
+    << signalNoise.noise << ","
+    << packet->GetSize() << ","
+    << channelFreqMhz << ","
+    << aMpdu.mpduRefNumber << ","
+    << staId << "\n";
+};
 
-void MonitorSnifferTx (std::string context, Ptr<const Packet> packet, uint16_t channelFreqMhz, WifiTxVector txVector, MpduInfo aMpdu, uint16_t staId)
+void 
+MonitorSnifferTx( std::string context,
+                    Ptr<const Packet> packet,
+                    uint16_t channelFreqMhz,
+                    WifiTxVector txVector,
+                    MpduInfo aMpdu,
+                    uint16_t staId)
 {
-    std::string filename = expname + "/MonitorSnifferTx.csv";
+    std::string filename = wwsn20241024snifferExpname + "/MonitorSnifferTx.csv";
     static std::fstream f (filename, std::ios::out | std::ios::app);
     if (!f.is_open()) {
         std::cerr << "Error opening file" << std::endl;
@@ -186,23 +208,15 @@ void MonitorSnifferTx (std::string context, Ptr<const Packet> packet, uint16_t c
     
     // 写入参数值到 CSV 文件
     f << currenttime << ","
-      << info.packetType << ","
-      << info.SequenceNumber <<","
-      << listenerNodeId << ","
-      << info.srcNodeId << ","
-      << packet->GetSize() << ","
-      << channelFreqMhz << ","
-      << aMpdu.mpduRefNumber << ","
-      << staId << "\n";
+    << info.packetType << ","
+    << info.SequenceNumber <<","
+    << listenerNodeId << ","
+    << info.srcNodeId << ","
+    << packet->GetSize() << ","
+    << channelFreqMhz << ","
+    << aMpdu.mpduRefNumber << ","
+    << staId << "\n";
 }
-
-// 定义全局变量来统计数据包数量和丢失数量
-std::map<uint32_t, uint32_t> packetsReceivedList; // 每个节点接收到的数据包数量
-std::map<uint32_t, uint32_t> packetsSentPerNode; // 每个节点发送的数据包数量
-std::map<uint32_t, uint32_t> packetsForwardedList; // 每个节点转发的数据包数量
-std::map<uint32_t, uint32_t> packetsReceivedFromList; // 从每个节点接收到的数据包数量
-std::map<uint32_t, double> energyConsumedList; // 每个节点消耗的能量
-
 
 class MyApp : public Application
 {
@@ -432,14 +446,22 @@ private:
     std::string m_protocolName; // 协议名称
     bool m_traceMobility; // 移动性跟踪标志
     uint32_t m_protocol; // 协议类型
+    
+    
+
 
 public:
     Experiment (); // 构造函数
     void Run (  int nSinks,
-                std::string CSVfileName
-                , double simtime
-                , int nodes); // 运行函数
+                std::string CSVfileName,
+                double simtime,
+                int nodes, 
+                double BHradio,
+                double SFradio, 
+                std::string expname); // 运行函数
     std::string CommandSetup (int argc, char **argv); // 命令设置函数
+    std::string expname;
+    std::string setExpname(std::string outExpname);
 };
 
 Experiment::Experiment()
@@ -471,6 +493,14 @@ PrintReceivedPacket (Ptr<Socket> socket, Ptr<Packet> packet, Address senderAddre
     return oss.str (); // 返回字符串流转换成的字符串
 }
 
+std::string 
+Experiment::setExpname(std::string outExpname)
+{
+    expname = outExpname;
+    return expname;
+}
+
+
 
 std::string
 Experiment::CommandSetup (int argc, char **argv) // 命令设置函数
@@ -484,8 +514,12 @@ Experiment::CommandSetup (int argc, char **argv) // 命令设置函数
 }
 
 void
-Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes) // 运行函数
-{
+Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes, double BHradio,
+                    double SFradio, 
+                    std::string expname
+                    ) // 运行函数
+{   
+    Experiment::setExpname(expname);
     Packet::EnablePrinting (); // 启用数据包打印
     m_nSinks = nSinks; // 设置汇聚节点数量
     m_CSVfileName = CSVfileName; // 设置CSV文件名
@@ -592,8 +626,8 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes)
     DsrHelper dsr; // 创建DSR助手
     AodvBHSFHelper aodvbhsf; //AODV with blackhole and selecting forwarding
     // 调用 SetMaliciousNodes 设置恶意节点
-    double blackholeRatio = 0.1; // 黑洞节点比例，例如 10%
-    double selectiveForwardingRatio = 0; // 选择性转发节点比例，例如 20%
+    double blackholeRatio = BHradio; // 黑洞节点比例，例如 10%
+    double selectiveForwardingRatio = SFradio; // 选择性转发节点比例，例如 20%
     aodvbhsf.SetMaliciousNodes(wwsnNodes, blackholeRatio, selectiveForwardingRatio); // 使用 wwsnNodes 节点容器
 
 
@@ -681,10 +715,10 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes)
     Config::Connect ("/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/Phy/MonitorSnifferRx", MakeCallback(&MonitorSnifferRx));
     Config::Connect ("/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/Phy/MonitorSnifferTx", MakeCallback(&MonitorSnifferTx));
 
+
+
+
     NS_LOG_INFO ("Run Simulation."); // 输出运行仿真信息
-
-    
-
     std::string filename = expname + "/pcap/wwsn";
     wifiPhy.EnablePcapAll (filename);
     filename = expname + "/wwsn.xml";
@@ -698,24 +732,38 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes)
 
     // Trace functions
 /// Trace function for remaining energy at node.
-
 }
 
 
 int
 main (int argc, char *argv[]) // 主函数
-{
+{   
+
+    int nSinks = 1; // 汇聚节点数量
+    double simtime = 50.0;
+    int num_nodes = 50;  
+    double BHradio = 0.1;
+    double SFradio = 0.0;
+    std::string expname = "20241101_simtime" + std::to_string(int(simtime)) 
+                        + "_num_nodes" + std::to_string(int(num_nodes)) 
+                        + "_BHradio" + std::to_string(int(BHradio)) 
+                        + "_SFradio" + std::to_string(int(SFradio));
+    const char* expname0 = expname.c_str();
+    std::string expname1 = "20241101_simtime" + std::to_string(int(simtime)) 
+                        + "_num_nodes" + std::to_string(int(num_nodes)) 
+                        + "_BHradio" + std::to_string(int(BHradio)) 
+                        + "_SFradio" + std::to_string(int(SFradio)) + "/pcap";
+
     Experiment experiment; // 创建Experiment对象
-    std::string expname = "20241101_drop20_t50_i0_n50";
-    const char* folder0 = "20241101_drop20_t50_i0_n50";
+    wwsn20241024snifferExpname = expname;
+    const char* folder0 = expname0;
     mkdir(folder0, 0777);
-    const char* folder1 = "20241101_drop20_t50_i0_n50/pcap";
+    const char* folder1 = expname1.c_str();
     mkdir(folder1, 0777);
 
     LogComponentEnable("soilMoistureUpdater", ns3::LOG_LEVEL_DEBUG);
     LogComponentEnable("AODVWITHBHANDSF", ns3::LOG_LEVEL_DEBUG);
     LogComponentEnable("AODVWITHBHANDSF-helper", ns3::LOG_LEVEL_DEBUG);
-    LogComponentEnable(expname0, LOG_ALL);
     
     // CheckThroughput
     std::string CSVfileName = expname + "/experiment"; // 调用命令设置函数获取CSV文件名
@@ -732,10 +780,14 @@ main (int argc, char *argv[]) // 主函数
         std::endl;
     out.close ();
 
-    int nSinks = 1; // 汇聚节点数量
-    double simtime = 50.0;
-    int num_nodes = 50;  
-    experiment.Run (nSinks, CSVfileName, simtime, num_nodes); // 运行实验
+    
+    experiment.Run (nSinks, 
+                    CSVfileName, 
+                    simtime, 
+                    num_nodes,
+                    BHradio,
+                    SFradio,
+                    expname); // 运行实验
 
 
 
