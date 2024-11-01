@@ -89,3 +89,5 @@ scratch-simulator
 scratch/subdir/
 *Exp/
 2024*/*
+*.out
+.gitignore
