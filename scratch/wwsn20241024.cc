@@ -744,15 +744,12 @@ main (int argc, char *argv[]) // 主函数
     int num_nodes = 50;  
     double BHradio = 0.1;
     double SFradio = 0.0;
-    std::string expname = "20241101_simtime" + std::to_string(int(simtime)) 
-                        + "_num_nodes" + std::to_string(int(num_nodes)) 
-                        + "_BHradio" + std::to_string(int(BHradio)) 
-                        + "_SFradio" + std::to_string(int(SFradio));
+    std::string expname = "20241101_simtime-" + std::to_string(int(simtime)) 
+                        + "_num_nodes-" + std::to_string(int(num_nodes)) 
+                        + "_BHradio-" + std::to_string(int(BHradio)) 
+                        + "_SFradio-" + std::to_string(int(SFradio));
     const char* expname0 = expname.c_str();
-    std::string expname1 = "20241101_simtime" + std::to_string(int(simtime)) 
-                        + "_num_nodes" + std::to_string(int(num_nodes)) 
-                        + "_BHradio" + std::to_string(int(BHradio)) 
-                        + "_SFradio" + std::to_string(int(SFradio)) + "/pcap";
+    std::string expname1 = expname + "/pcap";
 
     Experiment experiment; // 创建Experiment对象
     wwsn20241024snifferExpname = expname;
