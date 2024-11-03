@@ -14,7 +14,7 @@ main (int argc, char *argv[]) // 主函数
 {   
 
     int nSinks = 1; // 汇聚节点数量
-    double simtime = 50.0;
+    double simtime = 100.0;
     int num_nodes = 50;  
     double BHradio = 0.1;
     double SFradio = 0.0;

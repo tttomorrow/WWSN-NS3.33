@@ -393,8 +393,8 @@ MyApp::ScheduleTx (void)
 {
     if (m_running)  // 如果应用程序正在运行
     {
-        Time tNext (Seconds (m_packetSize * 8 / static_cast<double> (m_dataRate.GetBitRate ())));  // 下一次发送的时间
-        // Time tNext = Seconds(1.0); // 下一次发送的时间
+        // Time tNext (Seconds (m_packetSize * 8 / static_cast<double> (m_dataRate.GetBitRate ())));  // 下一次发送的时间
+        Time tNext = Seconds(0.05); // 下一次发送的时间
         m_sendEvent = Simulator::Schedule (tNext, &MyApp::SendPacket, this, m_source, m_peer, mac_source, mac_peer);  // 定时发送数据包
     }
 }

@@ -7,6 +7,7 @@ NS_LOG_COMPONENT_DEFINE ("soilMoistureUpdater");
 
 NS_OBJECT_ENSURE_REGISTERED (SoilMoistureUpdater);
 
+int count = 0;
 
 TypeId
 SoilMoistureUpdater::GetTypeId ()
@@ -29,8 +30,8 @@ void SoilMoistureUpdater::ScheduleNextUpdate() {
 
 void SoilMoistureUpdater::UpdateMoisture() {
     // 选择含水量上升或下降
-    double Mv_change[] = {0,0,0.25,0.05,-0.05,-0.05,-0.05,-0.05,-0.05,-0.05};
-    int count = 0;
+    double Mv_change[] = {0,0,0.25,0.05,-0.05,-0.05,-0.05,-0.05,-0.05,-0.05, 0, 0, 0, 0, 0, 0, 0, 0};
+    
     m_mv = m_mv + Mv_change[count];
     count++;
     // 确保含水量在范围内
