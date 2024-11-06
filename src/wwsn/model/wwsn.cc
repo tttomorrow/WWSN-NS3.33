@@ -612,7 +612,7 @@ Experiment::Run (int nSinks, double simtime, int nodes, double BHradio,
     Ptr<ConstantPositionMobilityModel> centerPosition = wwsnNodes.Get(0)->GetObject<ConstantPositionMobilityModel>();
     centerPosition->SetPosition(Vector(x_y_length / 2, x_y_length / 2, 0.0)); // 设置节点0的X、Y坐标为网络中心 (250, 250)，Z坐标为0
 
-    if (uniform){
+    if (uniform == 1){
         // 为其他节点分配均匀的位置
         uint32_t numNodes = wwsnNodes.GetN();
         double gridSpacing = std::sqrt(x_y_length * x_y_length / (numNodes - 1)); // 根据节点数量计算网格间距
