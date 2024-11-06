@@ -206,16 +206,18 @@ undergroundLoraLoss::DoCalcRxPower (double txPowerDbm,
     double m_eps_fw_prime = eps_winf + ((eps_w0 - eps_winf) / (1 + pow(two_pi_tao_w * frequency, 2)));
 
     //水的相对介电常数虚部。
-    double m_eps_fw_double_prime = ((two_pi_tao_w * frequency * (eps_w0 - eps_winf)) / (1 + pow(two_pi_tao_w * frequency, 2))) + (de_eff / (2 * M_PI * eps_0 * frequency)) * ((rho_s - m_rho_b) / (rho_s * m_mv * 100));
+    double m_eps_fw_double_prime = ((two_pi_tao_w * frequency * (eps_w0 - eps_winf)) / (1 + pow(two_pi_tao_w * frequency, 2))) + (de_eff / (2 * M_PI * eps_0 * frequency)) * ((rho_s - m_rho_b) / (rho_s * m_mv));
 
     NS_LOG_DEBUG("m_eps_fw_prime: " << m_eps_fw_prime << ", m_eps_fw_double_prime=" << m_eps_fw_double_prime << ".");
 
     // 计算介电常数的实部和虚部
     double eps_s = pow((1.01 + 0.44 * rho_s), 2) - 0.062;
-    double eps_r_prime = 1.15 * (pow(( (1 + (m_rho_b / rho_s) * pow(eps_s, alpha_prime) + pow(m_mv * 100, beta_prime) * pow(m_eps_fw_prime, alpha_prime) - m_mv * 100)), 1 / alpha_prime)) - 0.68;
-    double eps_r_double_prime = pow((pow(m_mv * 100, beta_double_prime) * pow(m_eps_fw_double_prime, alpha_prime)), 1 / alpha_prime);
 
+    double eps_r_prime = 1.15 * (pow(( (1 + (m_rho_b / rho_s) * pow(eps_s, alpha_prime) + pow(m_mv , beta_prime) * pow(m_eps_fw_prime, alpha_prime) - m_mv )), 1 / alpha_prime)) - 0.68;
 
+    double eps_r_double_prime = pow((pow(m_mv, beta_double_prime) * pow(m_eps_fw_double_prime, alpha_prime)), 1 / alpha_prime);
+
+    NS_LOG_DEBUG("eps_r_prime: " << eps_r_prime << ", eps_r_double_prime=" << eps_r_double_prime << ".");
 
     // 计算衰减常数 alpha
     double alpha = (2 * M_PI * frequency * 1e-6) * std::sqrt((miu * eps_r_prime / 2 * (sqrt(1 + pow(eps_r_double_prime / eps_r_prime, 2)) - 1)));
