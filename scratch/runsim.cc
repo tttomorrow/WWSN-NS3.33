@@ -18,7 +18,7 @@ main (int argc, char *argv[]) // 主函数
     int num_nodes = 50;  
     double BHradio = 0.1;
     double SFradio = 0.0;
-    std::string expname = "20241101_simtime-" + std::to_string(int(simtime)) 
+    std::string expname = "20241106_constantUniform_simtime-" + std::to_string(int(simtime)) 
                         + "_num_nodes-" + std::to_string(int(num_nodes)) 
                         + "_BHradio-" + std::to_string(int(BHradio)) 
                         + "_SFradio-" + std::to_string(int(SFradio));

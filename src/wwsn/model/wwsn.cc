@@ -121,6 +121,7 @@ PacketInfo HandlePacket(Ptr<const Packet> packet) {
         }
     } else {
         packetType = "ACK";
+        srcMac.CopyFrom(buffer + 4);
     }
     
     uint32_t srcNodeId = GetNodeIdFromMacAddress(srcMac);
@@ -592,6 +593,7 @@ Experiment::Run (int nSinks, double simtime, int nodes, double BHradio,
     radioEnergyHelper.Set ("RxCurrentA", DoubleValue (0.1));
     DeviceEnergyModelContainer deviceModels = radioEnergyHelper.Install (devices, sources); // 安装设备能量模型
     Experiment::setDeviceEnergyModelContainer(deviceModels);
+
     MobilityHelper mobilityAdhoc; // 创建移动性助手
     ObjectFactory pos; // 创建对象工厂
     pos.SetTypeId ("ns3::RandomRectanglePositionAllocator"); // 设置位置分配器类型
@@ -607,20 +609,20 @@ Experiment::Run (int nSinks, double simtime, int nodes, double BHradio,
     Ptr<ConstantPositionMobilityModel> centerPosition = wwsnNodes.Get(0)->GetObject<ConstantPositionMobilityModel>();
     centerPosition->SetPosition(Vector(150.0, 150.0, 0.0)); // 设置节点0的X、Y坐标为网络中心 (250, 250)，Z坐标为0
 
-    // // 为其他节点分配均匀的位置
-    // uint32_t numNodes = wwsnNodes.GetN();
-    // double gridSpacing = std::sqrt(300.0 * 300.0 / (numNodes - 1)); // 根据节点数量计算网格间距
+    // 为其他节点分配均匀的位置
+    uint32_t numNodes = wwsnNodes.GetN();
+    double gridSpacing = std::sqrt(300.0 * 300.0 / (numNodes - 1)); // 根据节点数量计算网格间距
 
-    // uint32_t nodeIndex = 1;
-    // for (double x = gridSpacing / 2; x < 300.0; x += gridSpacing) {
-    //     for (double y = gridSpacing / 2; y < 300.0; y += gridSpacing) {
-    //         if (nodeIndex >= numNodes) break;
-    //         Ptr<ConstantPositionMobilityModel> nodePosition = wwsnNodes.Get(nodeIndex)->GetObject<ConstantPositionMobilityModel>();
-    //         nodePosition->SetPosition(Vector(x, y, 0.0));
-    //         nodeIndex++;
-    //     }
-    //     if (nodeIndex >= numNodes) break;
-    // }
+    uint32_t nodeIndex = 1;
+    for (double x = gridSpacing / 2; x < 300.0; x += gridSpacing) {
+        for (double y = gridSpacing / 2; y < 300.0; y += gridSpacing) {
+            if (nodeIndex >= numNodes) break;
+            Ptr<ConstantPositionMobilityModel> nodePosition = wwsnNodes.Get(nodeIndex)->GetObject<ConstantPositionMobilityModel>();
+            nodePosition->SetPosition(Vector(x, y, 0.0));
+            nodeIndex++;
+        }
+        if (nodeIndex >= numNodes) break;
+    }
 
     AodvHelper aodv; // 创建AODV助手
     OlsrHelper olsr; // 创建OLSR助手
