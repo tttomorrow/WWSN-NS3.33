@@ -125,6 +125,7 @@ private:
     std::string m_protocolName; // 协议名称
     bool m_traceMobility; // 移动性跟踪标志
     uint32_t m_protocol; // 协议类型
+     
     
     
     
@@ -137,7 +138,8 @@ public:
                 int nodes, 
                 double BHradio,
                 double SFradio, 
-                std::string expname); // 运行函数
+                std::string expname,
+                double x_y_length); // 运行函数
     void LogEnergyForAllNodes();
     void setDeviceEnergyModelContainer(ns3::DeviceEnergyModelContainer deviceModels);
     void CommandSetup (int argc, char **argv); // 命令设置函数

@@ -18,10 +18,12 @@ main (int argc, char *argv[]) // 主函数
     int num_nodes = 50;  
     double BHradio = 0.1;
     double SFradio = 0.0;
-    std::string expname = "20241106_constantUniform_simtime-" + std::to_string(int(simtime)) 
+    double x_y_length = 10.0;// 节点范围
+    std::string expname = "20241106_testTX_constantUniform_simtime-" + std::to_string(int(simtime)) 
                         + "_num_nodes-" + std::to_string(int(num_nodes)) 
                         + "_BHradio-" + std::to_string(int(BHradio)) 
-                        + "_SFradio-" + std::to_string(int(SFradio));
+                        + "_SFradio-" + std::to_string(int(SFradio))
+                        + "_fieldLength-" + std::to_string(int(x_y_length));
     const char* expname0 = expname.c_str();
     std::string expname1 = expname + "/pcap";
 
@@ -35,8 +37,9 @@ main (int argc, char *argv[]) // 主函数
     LogComponentEnable("soilMoistureUpdater", ns3::LOG_LEVEL_DEBUG);
     LogComponentEnable("AODVWITHBHANDSF", ns3::LOG_LEVEL_DEBUG);
     LogComponentEnable("AODVWITHBHANDSF-helper", ns3::LOG_LEVEL_DEBUG);
+    // LogComponentEnable("PropagationLossModel", ns3::LOG_LEVEL_DEBUG);
     
- 
+    
 
 
 
@@ -46,7 +49,8 @@ main (int argc, char *argv[]) // 主函数
                     num_nodes,
                     BHradio,
                     SFradio,
-                    expname); // 运行实验
+                    expname,
+                    x_y_length); // 运行实验
 
 
 

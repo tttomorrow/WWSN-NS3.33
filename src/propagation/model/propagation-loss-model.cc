@@ -46,7 +46,7 @@ TypeId undergroundLoraLoss::GetTypeId (void)
     .AddConstructor<undergroundLoraLoss> ()
     .AddAttribute ("Frequency", 
                    "The carrier frequency (in Hz) at which propagation occurs  (default is 515 MHz).",
-                   DoubleValue (5.15e8),
+                   DoubleValue (4.15e8),
                    MakeDoubleAccessor (&undergroundLoraLoss::SetFrequency,
                                        &undergroundLoraLoss::GetFrequency),
                    MakeDoubleChecker<double> ())
@@ -70,7 +70,7 @@ TypeId undergroundLoraLoss::GetTypeId (void)
 }
 
 undergroundLoraLoss::undergroundLoraLoss()
-    : m_frequency(5.150e8), m_systemLoss(1.0), m_minLoss(0.0), m_mv(0.0),
+    : m_frequency(4.150e8), m_systemLoss(1.0), m_minLoss(0.0), m_mv(0.0),
       m_moistureUpdater(new SoilMoistureUpdater()) // 初始化成员变量
 {
     // 其他初始化代码（如果需要）
@@ -185,35 +185,52 @@ undergroundLoraLoss::DoCalcRxPower (double txPowerDbm,
     double alpha_prime = 0.65;
     double m_S = 0.5; //沙的质量分数。
     double m_C = 0.5; //粘土的质量分数。
-    double m_rho_b =  2.86;//土壤体密度
+    double m_rho_b =  1.5;//土壤体密度
     double m_mv = m_moistureUpdater->GetMv(); // 获取当前含水量
-    double m_eps_fw_prime = 80.3;//水的相对介电常数实部。
-    double m_eps_fw_double_prime = 2.75;//水的相对介电常数虚部。
+    // double m_eps_fw_prime = 80.3;//水的相对介电常数实部。
+    // double m_eps_fw_double_prime = 2.75;//水的相对介电常数虚部。
     double beta_prime = 1.2748 - 0.519 * m_S - 0.152 * m_C;
     double beta_double_prime = 1.33797 - 0.603 * m_S - 0.166 * m_C;
-
-    // 计算介电常数的实部和虚部
-    double eps_s = pow((1.01 + 0.44 * rho_s), 2) - 0.062;
-    double eps_r_prime = pow((1.15 * (1 + (m_rho_b / rho_s) * pow(eps_s, alpha_prime) + pow(m_mv, beta_prime) * pow(m_eps_fw_prime, alpha_prime) - m_mv)), 1 / alpha_prime) - 0.68;
-    double eps_r_double_prime = pow((pow(m_mv, beta_double_prime) * pow(m_eps_fw_double_prime, alpha_prime)), 1 / alpha_prime);
+    double eps_winf = 4.9;
+    double eps_w0 = 80.1;
+    double de_eff = -1.645 + 1.939 * m_rho_b -2.25622 * m_S + 1.594 * m_C;
+    double two_pi_tao_w = 0.58 * 1e-10 ;
+    double eps_0 = 8.854 * 1e-12;
 
     // 计算频率
     double frequency = undergroundLoraLoss::GetFrequency();
 
+
+    //计算水的相对介电常数虚实部
+    //水的相对介电常数实部。
+    double m_eps_fw_prime = eps_winf + ((eps_w0 - eps_winf) / (1 + pow(two_pi_tao_w * frequency, 2)));
+
+    //水的相对介电常数虚部。
+    double m_eps_fw_double_prime = ((two_pi_tao_w * frequency * (eps_w0 - eps_winf)) / (1 + pow(two_pi_tao_w * frequency, 2))) + (de_eff / (2 * M_PI * eps_0 * frequency)) * ((rho_s - m_rho_b) / (rho_s * m_mv * 100));
+
+    NS_LOG_DEBUG("m_eps_fw_prime: " << m_eps_fw_prime << ", m_eps_fw_double_prime=" << m_eps_fw_double_prime << ".");
+
+    // 计算介电常数的实部和虚部
+    double eps_s = pow((1.01 + 0.44 * rho_s), 2) - 0.062;
+    double eps_r_prime = 1.15 * (pow(( (1 + (m_rho_b / rho_s) * pow(eps_s, alpha_prime) + pow(m_mv * 100, beta_prime) * pow(m_eps_fw_prime, alpha_prime) - m_mv * 100)), 1 / alpha_prime)) - 0.68;
+    double eps_r_double_prime = pow((pow(m_mv * 100, beta_double_prime) * pow(m_eps_fw_double_prime, alpha_prime)), 1 / alpha_prime);
+
+
+
     // 计算衰减常数 alpha
-    double alpha = (2 * M_PI * frequency) * std::sqrt((miu * eps_r_prime / 2 * (sqrt(1 + pow(eps_r_double_prime / eps_r_prime, 2)) - 1)));
+    double alpha = (2 * M_PI * frequency * 1e-6) * std::sqrt((miu * eps_r_prime / 2 * (sqrt(1 + pow(eps_r_double_prime / eps_r_prime, 2)) - 1)));
 
 
-    // 计算相移常数 beta
-    double beta = (2 * M_PI * frequency) * std::sqrt((miu * eps_r_prime / 2 * (sqrt(1 + pow(eps_r_double_prime / eps_r_prime, 2)) + 1)));
+    // 计算相移常数 beta Mhz
+    double beta = (2 * M_PI * frequency * 1e-6) * std::sqrt((miu * eps_r_prime / 2 * (sqrt(1 + pow(eps_r_double_prime / eps_r_prime, 2)) + 1)));
 
     // 计算路径损失
-    double lossDb = (6.4 + 20 * std::log10(distance) + 20 * std::log10(beta) + 8.69 * alpha * distance)/1000000;
+    double lossDb = (6.4 + 20 * std::log10(distance) + 20 * std::log10(beta) + 8.69 * alpha * distance);
 
     // 返回接收信号强度
     double rxPower = txPowerDbm - std::max(lossDb, m_minLoss);
 
-    NS_LOG_DEBUG("Calculated Rx Power: " << rxPower << " dBm, distance=" << distance << "m, loss=" << lossDb << "dB, alpha=" << alpha << "dB ,beta=" << beta << "dB");
+    NS_LOG_DEBUG("txPowerDbm: "<< txPowerDbm << ", Calculated Rx Power: " << rxPower << " dBm, distance=" << distance << "m, loss=" << lossDb << "dB, alpha=" << alpha << "dB ,beta=" << beta << "dB");
     NS_LOG_DEBUG("frequency: " << frequency << " hz, m_mv=" << m_mv << ".");
 
     return rxPower;

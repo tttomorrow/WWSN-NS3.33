@@ -520,7 +520,8 @@ void Experiment::LogEnergyForAllNodes() {
 void
 Experiment::Run (int nSinks, double simtime, int nodes, double BHradio,
                     double SFradio, 
-                    std::string expname
+                    std::string expname,
+                    double x_y_length
                     ) // 运行函数
 {   
     Experiment::setExpname(expname);
@@ -561,12 +562,12 @@ Experiment::Run (int nSinks, double simtime, int nodes, double BHradio,
 
 
     // // For range near 250m
-    wifiPhy.Set ("TxPowerStart", DoubleValue(5.5));
-    wifiPhy.Set ("TxPowerEnd", DoubleValue(5.5));
+    wifiPhy.Set ("TxPowerStart", DoubleValue(22));
+    wifiPhy.Set ("TxPowerEnd", DoubleValue(22));
     wifiPhy.Set ("TxPowerLevels", UintegerValue(1));
     wifiPhy.Set ("TxGain", DoubleValue(0));
     wifiPhy.Set ("RxGain", DoubleValue(0));
-    wifiPhy.Set ("RxSensitivity", DoubleValue(-80)); /*csmmmari -61.8*/
+    wifiPhy.Set ("RxSensitivity", DoubleValue(-140)); /*csmmmari -61.8*/
 
 
     wifiPhy.SetChannel (wifiChannel.Create ()); // 设置WiFi物理层的信道
@@ -597,8 +598,9 @@ Experiment::Run (int nSinks, double simtime, int nodes, double BHradio,
     MobilityHelper mobilityAdhoc; // 创建移动性助手
     ObjectFactory pos; // 创建对象工厂
     pos.SetTypeId ("ns3::RandomRectanglePositionAllocator"); // 设置位置分配器类型
-    pos.Set ("X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=300.0]")); // 设置X轴均匀随机分布
-    pos.Set ("Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=300.0]")); // 设置Y轴均匀随机分布
+
+    pos.Set ("X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=" + std::to_string(x_y_length)+ "]")); // 设置X轴均匀随机分布
+    pos.Set ("Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=" + std::to_string(x_y_length)+ "]")); // 设置Y轴均匀随机分布
 
     Ptr<PositionAllocator> taPositionAlloc = pos.Create ()->GetObject<PositionAllocator> (); // 创建位置分配器对象
 
@@ -607,22 +609,22 @@ Experiment::Run (int nSinks, double simtime, int nodes, double BHradio,
     mobilityAdhoc.Install (wwsnNodes); // 安装移动性模型
 
     Ptr<ConstantPositionMobilityModel> centerPosition = wwsnNodes.Get(0)->GetObject<ConstantPositionMobilityModel>();
-    centerPosition->SetPosition(Vector(150.0, 150.0, 0.0)); // 设置节点0的X、Y坐标为网络中心 (250, 250)，Z坐标为0
+    centerPosition->SetPosition(Vector(x_y_length / 2, x_y_length / 2, 0.0)); // 设置节点0的X、Y坐标为网络中心 (250, 250)，Z坐标为0
 
-    // 为其他节点分配均匀的位置
-    uint32_t numNodes = wwsnNodes.GetN();
-    double gridSpacing = std::sqrt(300.0 * 300.0 / (numNodes - 1)); // 根据节点数量计算网格间距
+    // // 为其他节点分配均匀的位置
+    // uint32_t numNodes = wwsnNodes.GetN();
+    // double gridSpacing = std::sqrt(x_y_length * x_y_length / (numNodes - 1)); // 根据节点数量计算网格间距
 
-    uint32_t nodeIndex = 1;
-    for (double x = gridSpacing / 2; x < 300.0; x += gridSpacing) {
-        for (double y = gridSpacing / 2; y < 300.0; y += gridSpacing) {
-            if (nodeIndex >= numNodes) break;
-            Ptr<ConstantPositionMobilityModel> nodePosition = wwsnNodes.Get(nodeIndex)->GetObject<ConstantPositionMobilityModel>();
-            nodePosition->SetPosition(Vector(x, y, 0.0));
-            nodeIndex++;
-        }
-        if (nodeIndex >= numNodes) break;
-    }
+    // uint32_t nodeIndex = 1;
+    // for (double x = gridSpacing / 2; x < x_y_length; x += gridSpacing) {
+    //     for (double y = gridSpacing / 2; y < x_y_length; y += gridSpacing) {
+    //         if (nodeIndex >= numNodes) break;
+    //         Ptr<ConstantPositionMobilityModel> nodePosition = wwsnNodes.Get(nodeIndex)->GetObject<ConstantPositionMobilityModel>();
+    //         nodePosition->SetPosition(Vector(x, y, 0.0));
+    //         nodeIndex++;
+    //     }
+    //     if (nodeIndex >= numNodes) break;
+    // }
 
     AodvHelper aodv; // 创建AODV助手
     OlsrHelper olsr; // 创建OLSR助手
