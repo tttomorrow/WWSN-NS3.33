@@ -19,6 +19,7 @@ main (int argc, char *argv[]) // 主函数
     double BHradio = 0.1;
     double SFradio = 0.0;
     double x_y_length = 20.0;// 节点范围
+    bool uniform = true;
     std::string expname = "20241106_testTX_constantUniform_simtime-" + std::to_string(int(simtime)) 
                         + "_num_nodes-" + std::to_string(int(num_nodes)) 
                         + "_BHradio-" + std::to_string(int(BHradio)) 
@@ -50,7 +51,8 @@ main (int argc, char *argv[]) // 主函数
                     BHradio,
                     SFradio,
                     expname,
-                    x_y_length); // 运行实验
+                    x_y_length,
+                    uniform); // 运行实验
 
 
 

@@ -521,7 +521,8 @@ void
 Experiment::Run (int nSinks, double simtime, int nodes, double BHradio,
                     double SFradio, 
                     std::string expname,
-                    double x_y_length
+                    double x_y_length,
+                    bool uniform
                     ) // 运行函数
 {   
     Experiment::setExpname(expname);
@@ -611,20 +612,22 @@ Experiment::Run (int nSinks, double simtime, int nodes, double BHradio,
     Ptr<ConstantPositionMobilityModel> centerPosition = wwsnNodes.Get(0)->GetObject<ConstantPositionMobilityModel>();
     centerPosition->SetPosition(Vector(x_y_length / 2, x_y_length / 2, 0.0)); // 设置节点0的X、Y坐标为网络中心 (250, 250)，Z坐标为0
 
-    // // 为其他节点分配均匀的位置
-    // uint32_t numNodes = wwsnNodes.GetN();
-    // double gridSpacing = std::sqrt(x_y_length * x_y_length / (numNodes - 1)); // 根据节点数量计算网格间距
+    if (uniform){
+        // 为其他节点分配均匀的位置
+        uint32_t numNodes = wwsnNodes.GetN();
+        double gridSpacing = std::sqrt(x_y_length * x_y_length / (numNodes - 1)); // 根据节点数量计算网格间距
 
-    // uint32_t nodeIndex = 1;
-    // for (double x = gridSpacing / 2; x < x_y_length; x += gridSpacing) {
-    //     for (double y = gridSpacing / 2; y < x_y_length; y += gridSpacing) {
-    //         if (nodeIndex >= numNodes) break;
-    //         Ptr<ConstantPositionMobilityModel> nodePosition = wwsnNodes.Get(nodeIndex)->GetObject<ConstantPositionMobilityModel>();
-    //         nodePosition->SetPosition(Vector(x, y, 0.0));
-    //         nodeIndex++;
-    //     }
-    //     if (nodeIndex >= numNodes) break;
-    // }
+        uint32_t nodeIndex = 1;
+        for (double x = gridSpacing / 2; x < x_y_length; x += gridSpacing) {
+            for (double y = gridSpacing / 2; y < x_y_length; y += gridSpacing) {
+                if (nodeIndex >= numNodes) break;
+                Ptr<ConstantPositionMobilityModel> nodePosition = wwsnNodes.Get(nodeIndex)->GetObject<ConstantPositionMobilityModel>();
+                nodePosition->SetPosition(Vector(x, y, 0.0));
+                nodeIndex++;
+            }
+            if (nodeIndex >= numNodes) break;
+        }
+    }
 
     AodvHelper aodv; // 创建AODV助手
     OlsrHelper olsr; // 创建OLSR助手
