@@ -36,24 +36,12 @@ main (int argc, char *argv[]) // 主函数
     LogComponentEnable("AODVWITHBHANDSF", ns3::LOG_LEVEL_DEBUG);
     LogComponentEnable("AODVWITHBHANDSF-helper", ns3::LOG_LEVEL_DEBUG);
     
-    // CheckThroughput
-    std::string CSVfileName = expname + "/experiment"; // 调用命令设置函数获取CSV文件名
  
 
-    //清空上一个输出文件并写入列标题
-    std::ofstream out (CSVfileName.c_str ());
-    out << "SimulationSecond," <<
-        "ReceiveRate," <<
-        "PacketsReceived," <<
-        "NumberOfSinks," <<
-        "RoutingProtocol," <<
-        "TransmissionPower" <<
-        std::endl;
-    out.close ();
+
 
     
     experiment.Run (nSinks, 
-                    CSVfileName, 
                     simtime, 
                     num_nodes,
                     BHradio,

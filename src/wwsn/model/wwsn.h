@@ -39,6 +39,8 @@ void ClearFile(const std::string &filename);
 
 void RemainingEnergy(double oldValue, double remainingEnergy);
 
+void TotalEnergy (double oldValue, double totalEnergy);
+
 // 获取MAC地址对应的节点ID的函数
 uint32_t GetNodeIdFromMacAddress(Mac48Address mac);
 
@@ -81,16 +83,16 @@ public:
     MyApp ();  // 构造函数
     virtual ~MyApp();  // 析构函数
     void RecPacket (Ptr<Socket> socket);
-    void Setup (Ptr<Socket> socket, Ipv4Address source, Ipv4Address address, Mac48Address  macsource, Mac48Address  macdestination, uint32_t packetSize, uint32_t nPackets, DataRate dataRate);  // 设置应用程序参数
+    void Setup (Ptr<Socket> socket, Ipv4Address source, Ipv4Address address, Mac48Address  macsource, Mac48Address  macdestination, uint32_t packetSize, uint32_t nPackets, DataRate dataRate, std::string checkThroughoutputfileName, bool sink);  // 设置应用程序参数
     
 
 private:
     virtual void StartApplication (void);  // 启动应用程序
     virtual void StopApplication (void);  // 停止应用程序
-    void CheckThroughput (); // 检查吞吐量函数
+    
     void ScheduleTx (void);  // 定时发送数据包
     void SendPacket (Ipv4Address source, Ipv4Address address, Mac48Address  macsource, Mac48Address  macdestination);  // 发送数据包
-    
+    void CheckThroughput (); // 检查吞吐量函数
     Ptr<Socket>     m_socket;  // Socket 指针
     Ipv4Address     m_source;  // 对端地址
     Ipv4Address     m_peer;  // 对端地址
@@ -104,7 +106,9 @@ private:
     uint32_t        m_packetsSent;  // 已发送数据包数量
     uint32_t        port; // 端口号
     uint32_t        bytesTotal; // 总字节数
-    std::string m_CSVfileName; // CSV文件名
+    std::string     m_checkThroughoutputfileName; // CSV文件名
+    bool m_sink;
+    bool thoughoutputFirst;
 };
 
 
@@ -116,7 +120,6 @@ private:
     uint32_t port; // 端口号
     uint32_t bytesTotal; // 总字节数
     uint32_t packetsReceived; // 收到的数据包数量
-
     std::string m_CSVfileName; // CSV文件名
     int m_nSinks; // 汇聚节点数量
     std::string m_protocolName; // 协议名称
@@ -124,19 +127,23 @@ private:
     uint32_t m_protocol; // 协议类型
     
     
+    
 
 
 public:
     Experiment (); // 构造函数
     void Run (  int nSinks,
-                std::string CSVfileName,
                 double simtime,
                 int nodes, 
                 double BHradio,
                 double SFradio, 
                 std::string expname); // 运行函数
-    std::string CommandSetup (int argc, char **argv); // 命令设置函数
+    void LogEnergyForAllNodes();
+    void setDeviceEnergyModelContainer(ns3::DeviceEnergyModelContainer deviceModels);
+    void CommandSetup (int argc, char **argv); // 命令设置函数
     std::string expname;
     std::string setExpname(std::string outExpname);
+    ns3::DeviceEnergyModelContainer ExpdeviceModels;
+    
 };
 

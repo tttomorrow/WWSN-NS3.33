@@ -103,19 +103,31 @@ PacketInfo HandlePacket(Ptr<const Packet> packet) {
         if (buffer[30] == 0x08 && buffer[31] == 0x00) { // IPv4
             // 解析网络层（IPv4）
             if (packetSize >= 34) { // 至少需要34字节才能解析IPv4头部
-                if (buffer[41] == 0x11) { // UDP
+                if (buffer[41] == 0x11 && buffer[55] == 0x09) { // UDP
                     packetType = "UDP";
                 } else if (buffer[41] == 0x01) { // ICMP
                     packetType = "ICMP";
-                }
+                } else if (buffer[41] == 0x11 && buffer[60] == 0x01){
+                    packetType = "Route Request";
+                } else if (buffer[41] == 0x11 && buffer[60] == 0x02){
+                    packetType = "Route Replay";
+                } else if (buffer[41] == 0x11 && buffer[60] == 0x03){
+                    packetType = "Route Erroe";
+                } else if (buffer[41] == 0x11 && buffer[60] == 0x04){
+                    packetType = "Route Replay ACK";
+                } 
             }
         } else if (buffer[30] == 0x08 && buffer[31] == 0x06) { // ARP
-            packetType = "ARP";
+            if (buffer[39] == 0x01){
+                packetType = "ARP Request";
+            } else if (buffer[39] == 0x02){
+                packetType = "ARP Replay";
+            }
         }
     } else {
-        packetType = "ADOV";
+        packetType = "ACK";
     }
-
+    
     uint32_t srcNodeId = GetNodeIdFromMacAddress(srcMac);
 
     info.packetType = packetType;
@@ -134,7 +146,7 @@ uint32_t GetNodeIdFromContext(const std::string &context) {
     size_t endPos = context.find("/", startPos);
     if (startPos != std::string::npos && endPos != std::string::npos) {
         uint32_t nodeId = std::stoi(context.substr(startPos, endPos - startPos));
-        return nodeId + 1;
+        return nodeId;
     }
     return 0; // 未找到节点ID，返回0
 }

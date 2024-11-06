@@ -2,6 +2,7 @@
 #include <iostream> // 包含输入输出流头文件，用于标准输入输出
 #include <vector>
 #include <string>
+#include <functional>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "ns3/wifi-module.h"
@@ -35,6 +36,7 @@ using namespace dsr;
 NS_LOG_COMPONENT_DEFINE ("wwsnSim"); 
 
 std::string snifferExpname = "wwsnSim";
+
 // 定义全局变量来统计数据包数量和丢失数量
 // 定义全局变量来统计数据包数量和丢失数量
 std::map<uint32_t, uint32_t> packetsReceivedList; // 每个节点接收到的数据包数量
@@ -50,23 +52,20 @@ void ClearFile(const std::string &filename) {
 }
 
 void RemainingEnergy(double oldValue, double remainingEnergy) {
-    std::string filename = snifferExpname + "/remaining_energy.csv";
-    static std::fstream f(filename, std::ios::out | std::ios::app);
-    if (!f.is_open()) {
-        std::cerr << "Error opening file" << std::endl;
-        return;
-    }
-    // 写入 CSV 文件头（仅在第一次写入时）
-    static bool first = true;
-    if (first) {
-        ClearFile(filename);
-        f << "Time,RemainingEnergy\n";
-        first = false;
-    }
-
-    // 写入时间戳和剩余能量值到 CSV 文件
-    f << Simulator::Now().GetSeconds() << "," << remainingEnergy << "\n";
+    // NS_LOG_UNCOND (Simulator::Now ().GetSeconds ()
+    //              << "s Current remaining energy = " << remainingEnergy << "J");
 }
+
+void TotalEnergy (double oldValue, double totalEnergy)
+{
+//   NS_LOG_UNCOND (Simulator::Now ().GetSeconds ()
+//                  << "s Total energy consumed by radio = " << totalEnergy << "J");
+}
+
+
+
+
+
 
 // 获取MAC地址对应的节点ID的函数
 uint32_t GetNodeIdFromMacAddress(Mac48Address mac) {
@@ -99,19 +98,31 @@ PacketInfo HandlePacket(Ptr<const Packet> packet) {
         if (buffer[30] == 0x08 && buffer[31] == 0x00) { // IPv4
             // 解析网络层（IPv4）
             if (packetSize >= 34) { // 至少需要34字节才能解析IPv4头部
-                if (buffer[41] == 0x11) { // UDP
+                if (buffer[41] == 0x11 && buffer[55] == 0x09) { // UDP
                     packetType = "UDP";
                 } else if (buffer[41] == 0x01) { // ICMP
                     packetType = "ICMP";
-                }
+                } else if (buffer[41] == 0x11 && buffer[60] == 0x01){
+                    packetType = "Route Request";
+                } else if (buffer[41] == 0x11 && buffer[60] == 0x02){
+                    packetType = "Route Replay";
+                } else if (buffer[41] == 0x11 && buffer[60] == 0x03){
+                    packetType = "Route Error";
+                } else if (buffer[41] == 0x11 && buffer[60] == 0x04){
+                    packetType = "Route Replay ACK";
+                } 
             }
         } else if (buffer[30] == 0x08 && buffer[31] == 0x06) { // ARP
-            packetType = "ARP";
+            if (buffer[39] == 0x01){
+                packetType = "ARP Request";
+            } else if (buffer[39] == 0x02){
+                packetType = "ARP Replay";
+            }
         }
     } else {
-        packetType = "ADOV";
+        packetType = "ACK";
     }
-
+    
     uint32_t srcNodeId = GetNodeIdFromMacAddress(srcMac);
 
     info.packetType = packetType;
@@ -130,7 +141,7 @@ uint32_t GetNodeIdFromContext(const std::string &context) {
     size_t endPos = context.find("/", startPos);
     if (startPos != std::string::npos && endPos != std::string::npos) {
         uint32_t nodeId = std::stoi(context.substr(startPos, endPos - startPos));
-        return nodeId + 1;
+        return nodeId;
     }
     return 0; // 未找到节点ID，返回0
 }
@@ -154,7 +165,7 @@ WWSNMonitorSnifferRx ( std::string context,
     static bool first = true;
     if (first) {
         ClearFile(filename);
-        f << "Time, PacketType, SequenceNumber, listener,SrcNodeId, SNR, SignalPower,NoisePower,PacketSize,ChannelFreqMhz,MpduRefNumber,StaId\n";
+        f << "Time,PacketType,SequenceNumber,listener,SrcNodeId,SNR,SignalPower,NoisePower,PacketSize,ChannelFreqMhz,MpduRefNumber,StaId\n";
         first = false;
     }
     double currenttime = (Simulator::Now ()).GetSeconds (); // 下一次发送的时间
@@ -194,7 +205,7 @@ WWSNMonitorSnifferTx ( std::string context,
     static bool first = true;
     if (first) {
         ClearFile(filename);
-        f << "Time, PacketType,SequenceNumber,listener,SrcNodeId,PacketSize,ChannelFreqMhz,MpduRefNumber,StaId\n";
+        f << "Time,PacketType,SequenceNumber,listener,SrcNodeId,PacketSize,ChannelFreqMhz,MpduRefNumber,StaId\n";
         first = false;
     }
     double currenttime = (Simulator::Now ()).GetSeconds (); // 下一次发送的时间
@@ -230,7 +241,9 @@ MyApp::MyApp ()
           m_packetsSent (0),
           port (9),
           bytesTotal (0), // 初始化总字节数为0
-          m_CSVfileName ("WWSNwithSniffer.csv") // 初始化CSV文件名
+          m_checkThroughoutputfileName (), // 初始化CSV文件名
+          m_sink (false),
+          thoughoutputFirst (true)
 {
 }
 
@@ -240,7 +253,16 @@ MyApp::~MyApp()
 }
 
 void
-MyApp::Setup (Ptr<Socket> socket, Ipv4Address source, Ipv4Address address, Mac48Address  macsource, Mac48Address  macdestination,uint32_t packetSize, uint32_t nPackets, DataRate dataRate)
+MyApp::Setup (Ptr<Socket> socket, 
+Ipv4Address source, 
+Ipv4Address address, 
+Mac48Address  macsource, 
+Mac48Address  macdestination,
+uint32_t packetSize, 
+uint32_t nPackets, 
+DataRate dataRate,
+std::string checkThroughoutputfileName,
+bool sink)
 {
     m_socket = socket;
     m_source = source;
@@ -250,20 +272,29 @@ MyApp::Setup (Ptr<Socket> socket, Ipv4Address source, Ipv4Address address, Mac48
     m_packetSize = packetSize;
     m_nPackets = nPackets;
     m_dataRate = dataRate;
+    m_checkThroughoutputfileName = checkThroughoutputfileName;
+    m_sink = sink;
 }
 
 void
 MyApp::StartApplication (void)
 {   
-    CheckThroughput();
-    InetSocketAddress remote = InetSocketAddress (m_peer, port); // 创建远程套接字地址
-    // NS_LOG_INFO("remoteInetSocketAddress"<<remote);
-    InetSocketAddress local = InetSocketAddress (m_source, port); // 创建本地套接字地址
-    m_running = true;
-    m_packetsSent = 0;
-    m_socket->Bind (local);  // 绑定 Socket
-    m_socket->Connect (remote);  // 连接对端
-    SendPacket (m_source, m_peer, mac_source, mac_peer);  // 发送数据包
+    if (m_sink){
+        InetSocketAddress local = InetSocketAddress (m_source, port); // 创建本地套接字地址
+        m_socket->Bind (local);  // 绑定 Socket
+        CheckThroughput();
+        m_socket->SetRecvCallback(MakeCallback (&MyApp::RecPacket, this));
+        
+    } else {
+        InetSocketAddress remote = InetSocketAddress (m_peer, port); // 创建远程套接字地址
+        // NS_LOG_INFO("remoteInetSocketAddress"<<remote);
+        InetSocketAddress local = InetSocketAddress (m_source, port); // 创建本地套接字地址
+        m_running = true;
+        m_packetsSent = 0;
+        m_socket->Bind (local);  // 绑定 Socket
+        m_socket->Connect (remote);  // 连接对端
+        SendPacket (m_source, m_peer, mac_source, mac_peer);  // 发送数据包
+    }
     
 }
 
@@ -288,15 +319,22 @@ MyApp::CheckThroughput () // 检查吞吐量函数
 {
     double kbs = (bytesTotal * 8.0) / 1000; // 计算吞吐量（kbps）
     bytesTotal = 0; // 清零总字节数
+    std::string filename = m_checkThroughoutputfileName + "/Throughoutput.csv";
+    std::ofstream out (filename.c_str (), std::ios::app); // 打开CSV文件流
 
-    std::ofstream out (m_CSVfileName.c_str (), std::ios::app); // 打开CSV文件流
+        // 如果是第一次执行，写入 CSV 文件的表头
+    if (thoughoutputFirst) {
+        ClearFile(filename);
+        out << "Time,Throughput(kbps)" << std::endl;
+        thoughoutputFirst = false;
+    }
 
     out << (Simulator::Now ()).GetSeconds () << "," // 写入当前仿真时间
         << kbs << "," // 写入吞吐量
         << std::endl; // 换行
 
     out.close (); // 关闭文件流
-    Simulator::Schedule (Seconds (5.0), &MyApp::CheckThroughput, this); // 定时调度下一次检查吞吐量
+    Simulator::Schedule (Seconds (1.0), &MyApp::CheckThroughput, this); // 定时调度下一次检查吞吐量
 }
 
 void
@@ -403,7 +441,6 @@ Experiment::Experiment()
         : port (9), // 初始化端口号为9
           bytesTotal (0), // 初始化总字节数为0
           packetsReceived (0), // 初始化收到的数据包数量为0
-          m_CSVfileName ("WWSNwithSniffer.csv"), // 初始化CSV文件名
           m_traceMobility (false), // 初始化移动性跟踪标志为false
           m_protocol (4) // 初始化协议类型
 {
@@ -437,19 +474,50 @@ Experiment::setExpname(std::string outExpname)
 
 
 
-std::string
+void
 Experiment::CommandSetup (int argc, char **argv) // 命令设置函数
 {
     CommandLine cmd (__FILE__); // 创建命令行对象
-    cmd.AddValue ("CSVfileName", "The name of the CSV output file name", m_CSVfileName); // 添加CSV文件名参数
     cmd.AddValue ("traceMobility", "Enable mobility tracing", m_traceMobility); // 添加移动性跟踪标志参数
     cmd.AddValue ("protocol", "1=OLSR;2=AODV;3=DSDV;4=DSR;5=AODVBHSF", m_protocol); // 添加协议类型参数
     cmd.Parse (argc, argv); // 解析命令行参数
-    return m_CSVfileName; // 返回CSV文件名
+}
+
+void Experiment::setDeviceEnergyModelContainer(ns3::DeviceEnergyModelContainer deviceModels){
+
+    ExpdeviceModels = deviceModels;
+
+};
+// 定时器触发函数：每秒调用一次
+void Experiment::LogEnergyForAllNodes() {
+    // 获取当前模拟时间
+    double currentTime = Simulator::Now().GetSeconds();
+    static bool first = true;
+    std::string filename = snifferExpname + "/remaining_energy.csv";
+    static std::fstream f(filename, std::ios::out | std::ios::app);
+    int i = 1;
+    // 如果是第一次执行，写入 CSV 文件的表头
+    if (first) {
+        ClearFile(filename);
+        f << "NodeId,Time,EnergyConsumed" << std::endl;
+        first = false;
+    }
+    for (DeviceEnergyModelContainer::Iterator iter = ExpdeviceModels.Begin (); iter != ExpdeviceModels.End (); iter ++)
+    {
+        double energyConsumed = (*iter)->GetTotalEnergyConsumption ();
+        // NS_LOG_UNCOND ("End of simulation (" << Simulator::Now ().GetSeconds ()
+        //                 << "s) Total energy consumed by radio = " << energyConsumed << "J");
+        // NS_ASSERT (energyConsumed <= 0.1);
+        // 写入当前节点的剩余能量到 CSV 文件
+        f << i << "," << currentTime << "," << energyConsumed << std::endl;
+        i++;
+    }
+    // 设置下一秒定时器
+    Simulator::Schedule(Seconds(1.0), &Experiment::LogEnergyForAllNodes, this);
 }
 
 void
-Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes, double BHradio,
+Experiment::Run (int nSinks, double simtime, int nodes, double BHradio,
                     double SFradio, 
                     std::string expname
                     ) // 运行函数
@@ -457,7 +525,6 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes,
     Experiment::setExpname(expname);
     Packet::EnablePrinting (); // 启用数据包打印
     m_nSinks = nSinks; // 设置汇聚节点数量
-    m_CSVfileName = CSVfileName; // 设置CSV文件名
 
 
     // int n_maliciouse = 10;
@@ -524,7 +591,7 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes,
     radioEnergyHelper.Set ("TxCurrentA", DoubleValue (0.1)); // 设置发送电流
     radioEnergyHelper.Set ("RxCurrentA", DoubleValue (0.1));
     DeviceEnergyModelContainer deviceModels = radioEnergyHelper.Install (devices, sources); // 安装设备能量模型
-
+    Experiment::setDeviceEnergyModelContainer(deviceModels);
     MobilityHelper mobilityAdhoc; // 创建移动性助手
     ObjectFactory pos; // 创建对象工厂
     pos.SetTypeId ("ns3::RandomRectanglePositionAllocator"); // 设置位置分配器类型
@@ -618,20 +685,36 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes,
             DynamicCast<BasicEnergySource> (sources.Get (i));
         basicSourcePtr->TraceConnectWithoutContext (
             "RemainingEnergy", MakeCallback (&RemainingEnergy));
+        Ptr<DeviceEnergyModel> basicRadioModelPtr =
+        basicSourcePtr->FindDeviceEnergyModels ("ns3::WifiRadioEnergyModel").Get (0);
+        NS_ASSERT (basicRadioModelPtr != NULL);
+        basicRadioModelPtr->TraceConnectWithoutContext ("TotalEnergyConsumption", MakeCallback (&TotalEnergy));
     }
+
+    Simulator::Schedule(Seconds(1.0), &Experiment::LogEnergyForAllNodes, this);
+
+    uint32_t packets_number = uint32_t(Totaltime * 20);
 
     for (int i = 0; i < nSinks; i++) // 循环设置发送节点
     {
         TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
-        Ptr<Socket> sink = Socket::CreateSocket (wwsnNodes.Get (i), tid); // 创建套接字
-        InetSocketAddress local = InetSocketAddress (adhocInterfaces.GetAddress (i), port); // 创建本地套接字地址
-        sink->Bind (local); // 绑定套接字
-        // sink->SetRecvCallback (MakeCallback (&MyApp::RecPacket, this)); // 设置接收回调函数
+        // Ptr<Socket> sink = Socket::CreateSocket (wwsnNodes.Get (i), tid); // 创建套接字
+        // InetSocketAddress local = InetSocketAddress (adhocInterfaces.GetAddress (i), port); // 创建本地套接字地址
+        // sink->Bind (local); // 绑定套接字
+        // // sink->SetRecvCallback (MakeCallback (&MyApp::RecPacket, this)); // 设置接收回调函数
     
-        PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (adhocInterfaces.GetAddress (i), port));  // 创建数据包接收器助手
-        ApplicationContainer sinkApps = packetSinkHelper.Install (wwsnNodes.Get (i));  // 安装数据包接收器到节点1
-        sinkApps.Start (Seconds (0));  // 启动数据包接收器应用
-        sinkApps.Stop (Seconds (Totaltime));  // 停止数据包接收器应用
+        // PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (adhocInterfaces.GetAddress (i), port));  // 创建数据包接收器助手
+        // ApplicationContainer sinkApps = packetSinkHelper.Install (wwsnNodes.Get (i));  // 安装数据包接收器到节点1
+        // sinkApps.Start (Seconds (0));  // 启动数据包接收器应用
+        // sinkApps.Stop (Seconds (Totaltime));  // 停止数据包接收器应用
+
+        Ptr<MyApp> app = CreateObject<MyApp> ();  // 创建应用程序对象
+        Ptr<Socket> source = Socket::CreateSocket (wwsnNodes.Get (i), tid);
+        Mac48Address mac_sorce = Mac48Address::ConvertFrom (wwsnNodes.Get (i)->GetDevice (0)->GetAddress ());
+        app->Setup (source, adhocInterfaces.GetAddress (i), adhocInterfaces.GetAddress (i), mac_sorce, mac_sorce, 1040, packets_number, DataRate ("1Mbps"), expname, true);  // 配置sink应用程序参数
+        app->SetStartTime (Seconds (0));  // 设置应用程序启动时间
+        app->SetStopTime (Seconds (Totaltime));  // 设置应用程序停止时间
+        wwsnNodes.Get (i)->AddApplication (app);  // 将应用程序安装到节点
 
         Mac48Address mac_peer = Mac48Address::ConvertFrom (wwsnNodes.Get (i)->GetDevice (0)->GetAddress ());
         // NS_LOG_INFO("mac_peer"<<mac_peer);
@@ -640,7 +723,7 @@ Experiment::Run (int nSinks, std::string CSVfileName, double simtime, int nodes,
         Ptr<MyApp> app = CreateObject<MyApp> ();  // 创建应用程序对象
         Ptr<Socket> source = Socket::CreateSocket (wwsnNodes.Get (j), tid);
         Mac48Address mac_sorce = Mac48Address::ConvertFrom (wwsnNodes.Get (j)->GetDevice (0)->GetAddress ());
-        app->Setup (source, adhocInterfaces.GetAddress (j), adhocInterfaces.GetAddress (i), mac_sorce, mac_peer, 1040, 1000, DataRate ("1Mbps"));  // 配置应用程序参数
+        app->Setup (source, adhocInterfaces.GetAddress (j), adhocInterfaces.GetAddress (i), mac_sorce, mac_peer, 1040, packets_number, DataRate ("1Mbps"), expname, false);  // 配置send应用程序参数
         app->SetStartTime (Seconds (0));  // 设置应用程序启动时间
         app->SetStopTime (Seconds (Totaltime));  // 设置应用程序停止时间
         wwsnNodes.Get (j)->AddApplication (app);  // 将应用程序安装到节点
