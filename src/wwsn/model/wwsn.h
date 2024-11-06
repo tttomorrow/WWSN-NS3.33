@@ -140,7 +140,7 @@ public:
                 double SFradio, 
                 std::string expname,
                 double x_y_length,
-                bool uniform); // 运行函数
+                int uniform); // 运行函数
     void LogEnergyForAllNodes();
     void setDeviceEnergyModelContainer(ns3::DeviceEnergyModelContainer deviceModels);
     void CommandSetup (int argc, char **argv); // 命令设置函数

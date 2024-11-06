@@ -522,7 +522,7 @@ Experiment::Run (int nSinks, double simtime, int nodes, double BHradio,
                     double SFradio, 
                     std::string expname,
                     double x_y_length,
-                    bool uniform
+                    int uniform
                     ) // 运行函数
 {   
     Experiment::setExpname(expname);
