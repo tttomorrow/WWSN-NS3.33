@@ -33,10 +33,10 @@ void SoilMoistureUpdater::ScheduleNextUpdate() {
 
 void SoilMoistureUpdater::UpdateMoisture() {
     // 选择含水量上升或下降
-    double Mv_change[] = {0,0,0.25,0.05,-0.05,-0.05,-0.05,-0.05,-0.05,-0.05, 0, 0, 0, 0, 0, 0, 0, 0};
+    double Mv_change[] = {0,0,0.10,0.05,-0.05,-0.05,-0.05,-0.05,-0.05,-0.05, 0, 0, 0, 0, 0, 0, 0, 0};
     
      // 每秒的变化量是原始 10 秒变化量的 1/10
-    double perSecondChange = Mv_change[count] / (time / updateTime);
+    double perSecondChange = Mv_change[index] / (time / updateTime);
 
      // 更新土壤湿度
     m_mv += perSecondChange;

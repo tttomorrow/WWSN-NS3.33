@@ -568,7 +568,7 @@ Experiment::Run (int nSinks, double simtime, int nodes, double BHradio,
     wifiPhy.Set ("TxPowerLevels", UintegerValue(1));
     wifiPhy.Set ("TxGain", DoubleValue(0));
     wifiPhy.Set ("RxGain", DoubleValue(0));
-    wifiPhy.Set ("RxSensitivity", DoubleValue(-140)); /*csmmmari -61.8*/
+    wifiPhy.Set ("RxSensitivity", DoubleValue(-65)); /*csmmmari -61.8*/
 
 
     wifiPhy.SetChannel (wifiChannel.Create ()); // 设置WiFi物理层的信道

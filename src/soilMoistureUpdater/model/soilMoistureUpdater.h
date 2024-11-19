@@ -10,7 +10,7 @@ class SoilMoistureUpdater : public Object{
 public:
     // 无参构造函数，使用默认参数
     static TypeId GetTypeId (void);
-    SoilMoistureUpdater(double initialMv = 0.05, double minMv = 0.05, double maxMv = 0.4);
+    SoilMoistureUpdater(double initialMv = 0.05, double minMv = 0.05, double maxMv = 0.25);
 
     // 更新函数
     void UpdateMoisture();
