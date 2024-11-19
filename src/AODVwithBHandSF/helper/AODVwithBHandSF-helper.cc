@@ -83,13 +83,14 @@ AodvBHSFHelper::SetMaliciousNodes(NodeContainer nodes, double blackholeRatio, do
 
   // 将生成的随机数保存到数组中
   uint32_t index = 0;
+  int BHcount = 0;
   for (int number : uniqueNumbers) {
       randomNumbers[index++] = number;
       NS_LOG_DEBUG("randomNumbers" << number << " .");
   }
   for (uint32_t i = 0; i < count; i++)
   {
-    int BHcount = 0;
+    
     if (BHcount < blackholeRatio * nodes.GetN())
     {
       m_blackholeNodes.insert(randomNumbers[i]);
