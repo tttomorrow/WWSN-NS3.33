@@ -8,6 +8,7 @@ NS_LOG_COMPONENT_DEFINE ("soilMoistureUpdater");
 NS_OBJECT_ENSURE_REGISTERED (SoilMoistureUpdater);
 
 int count = 0;
+int index = 0;
 double time = 10.0; // 每10秒更新一次,此值为下面数组Mv_change[]值的更新时间
 double updateTime = 1.0; // 每次更新时间可以在指定
 TypeId
@@ -40,8 +41,10 @@ void SoilMoistureUpdater::UpdateMoisture() {
      // 更新土壤湿度
     m_mv += perSecondChange;
 
+
     // 增加 count，确保数组的循环
-    count = (count + 1) % (sizeof(Mv_change) / sizeof(Mv_change[0])); // 确保 count 在 0 和数组长度之间循环
+    count = count + 1;
+    index = ((count) / int(time / updateTime)) % (sizeof(Mv_change) / sizeof(Mv_change[0])); // 确保 index 在 0 和数组长度之间循环
 
     // 确保含水量在范围内
     m_mv = std::max(m_minMv, std::min(m_maxMv, m_mv));
