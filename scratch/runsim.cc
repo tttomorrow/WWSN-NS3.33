@@ -16,14 +16,14 @@ main (int argc, char *argv[]) // 主函数
     int nSinks = 1; // 汇聚节点数量
     double simtime = 100.0;
     int num_nodes = 100;  
-    double BHradio = 0.1;
+    double BHradio = 0.3;
     double SFradio = 0.0;
     double x_y_length = 20.0;// 节点范围
     int uniform = 1;//控制节点是否均匀分布 1均匀分布
     std::string expname = "20241119_testTX_constantUniform_simtime-" + std::to_string(int(simtime)) 
                         + "_num_nodes-" + std::to_string(int(num_nodes)) 
-                        + "_BHradio-" + std::to_string(int(BHradio)) 
-                        + "_SFradio-" + std::to_string(int(SFradio))
+                        + "_BHradio-" + std::to_string(int(BHradio*num_nodes)) 
+                        + "_SFradio-" + std::to_string(int(SFradio*num_nodes))
                         + "_fieldLength-" + std::to_string(int(x_y_length))
                         + "_uniform-" + std::to_string(int(uniform));
     const char* expname0 = expname.c_str();
