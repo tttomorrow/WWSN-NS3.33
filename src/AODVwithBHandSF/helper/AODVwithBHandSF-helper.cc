@@ -72,7 +72,7 @@ AodvBHSFHelper::SetMaliciousNodes(NodeContainer nodes, double blackholeRatio, do
   std::unordered_set<int> uniqueNumbers;
   const uint32_t fixedSeed = 12345;  // 随机数种子
   std::mt19937 gen(fixedSeed);  // 使用 Mersenne Twister 算法
-  std::uniform_int_distribution<> dis(1, nodes.GetN()); // 定义随机数分布
+  std::uniform_int_distribution<> dis(2, nodes.GetN()); // 定义随机数分布
   uint32_t count = ((blackholeRatio + selectiveForwardingRatio) * nodes.GetN());
   uint32_t randomNumbers[count];
   NS_LOG_DEBUG("malicious Nodes number" << count << " .");
