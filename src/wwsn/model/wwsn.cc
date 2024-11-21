@@ -72,7 +72,7 @@ uint32_t GetNodeIdFromMacAddress(Mac48Address mac) {
     uint8_t macArray[6];
     mac.CopyTo(macArray);
     uint32_t nodeId = macArray[5] + 1; // 最后一字节加1
-    return nodeId;
+    return nodeId - 1;
 }
 
 
@@ -81,6 +81,7 @@ uint32_t GetNodeIdFromMacAddress(Mac48Address mac) {
 PacketInfo HandlePacket(Ptr<const Packet> packet) {
     uint32_t packetSize = packet->GetSize();
     Mac48Address srcMac;
+    Mac48Address desMac;
     std::string packetType;
     PacketInfo info;
 
@@ -93,6 +94,7 @@ PacketInfo HandlePacket(Ptr<const Packet> packet) {
     uint32_t SequenceNumber = 0;
     if (packetSize > 14) { // 至少需要14字节才能解析MAC层头部
         srcMac.CopyFrom(buffer + 10); // 第11到16字节是源MAC地址
+        desMac.CopyFrom(buffer + 4);
         // packetType = "Generic Ethernet Frame";
         SequenceNumber =  (buffer[22] << 8) | buffer[23];
         if (buffer[30] == 0x08 && buffer[31] == 0x00) { // IPv4
@@ -121,14 +123,18 @@ PacketInfo HandlePacket(Ptr<const Packet> packet) {
         }
     } else {
         packetType = "ACK";
+        desMac.CopyFrom(buffer + 4);
         srcMac.CopyFrom(buffer + 4);
     }
     
     uint32_t srcNodeId = GetNodeIdFromMacAddress(srcMac);
+    uint32_t desNodeId = GetNodeIdFromMacAddress(desMac);
 
     info.packetType = packetType;
     info.srcMac = srcMac;
+    info.desMac = desMac;
     info.srcNodeId = srcNodeId;
+    info.desNodeId = desNodeId;
     info.SequenceNumber = SequenceNumber;
 
 
@@ -142,7 +148,7 @@ uint32_t GetNodeIdFromContext(const std::string &context) {
     size_t endPos = context.find("/", startPos);
     if (startPos != std::string::npos && endPos != std::string::npos) {
         uint32_t nodeId = std::stoi(context.substr(startPos, endPos - startPos));
-        return nodeId;
+        return nodeId + 1;
     }
     return 0; // 未找到节点ID，返回0
 }
@@ -171,7 +177,7 @@ WWSNMonitorSnifferRx ( std::string context,
     }
     double currenttime = (Simulator::Now ()).GetSeconds (); // 下一次发送的时间
     PacketInfo info = HandlePacket(packet);
-    uint32_t listenerNodeId = GetNodeIdFromContext(context) + 1;
+    uint32_t listenerNodeId = GetNodeIdFromContext(context);
     
     // 写入参数值到 CSV 文件
     f << currenttime << ","
@@ -206,7 +212,7 @@ WWSNMonitorSnifferTx ( std::string context,
     static bool first = true;
     if (first) {
         ClearFile(filename);
-        f << "Time,PacketType,SequenceNumber,listener,SrcNodeId,PacketSize,ChannelFreqMhz,MpduRefNumber,StaId\n";
+        f << "Time,PacketType,SequenceNumber,SrcNodeId,desNodeId,PacketSize,ChannelFreqMhz,MpduRefNumber,StaId\n";
         first = false;
     }
     double currenttime = (Simulator::Now ()).GetSeconds (); // 下一次发送的时间
@@ -219,7 +225,7 @@ WWSNMonitorSnifferTx ( std::string context,
     << info.packetType << ","
     << info.SequenceNumber <<","
     << listenerNodeId << ","
-    << info.srcNodeId << ","
+    << info.desNodeId << ","
     << packet->GetSize() << ","
     << channelFreqMhz << ","
     << aMpdu.mpduRefNumber << ","
