@@ -172,7 +172,7 @@ WWSNMonitorSnifferRx ( std::string context,
     static bool first = true;
     if (first) {
         ClearFile(filename);
-        f << "Time,PacketType,SequenceNumber,listener,SrcNodeId,SNR,SignalPower,NoisePower,PacketSize,ChannelFreqMhz,MpduRefNumber,StaId\n";
+        f << "Time,PacketType,SequenceNumber,listener,SrcNodeId,DesNodeId,SNR,SignalPower,NoisePower,PacketSize,ChannelFreqMhz,MpduRefNumber,StaId\n";
         first = false;
     }
     double currenttime = (Simulator::Now ()).GetSeconds (); // 下一次发送的时间
@@ -185,6 +185,7 @@ WWSNMonitorSnifferRx ( std::string context,
     << info.SequenceNumber << ","
     << listenerNodeId << ","
     << info.srcNodeId << ","
+    << info.desNodeId << ","
     << signalNoise.signal - signalNoise.noise << ","
     << signalNoise.signal << ","
     << signalNoise.noise << ","
