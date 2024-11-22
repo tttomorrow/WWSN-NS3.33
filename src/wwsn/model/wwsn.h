@@ -46,10 +46,9 @@ uint32_t GetNodeIdFromMacAddress(Mac48Address mac);
 
 struct PacketInfo {
     std::string packetType;
-    Mac48Address srcMac;
-    Mac48Address desMac;
+    uint32_t srcMac;
+    uint32_t desMac;
     uint32_t srcNodeId;
-    uint32_t desNodeId;
     uint32_t SequenceNumber;
 };
 
