@@ -179,7 +179,7 @@ undergroundLoraLoss::DoCalcRxPower (double txPowerDbm,
 
   // propagationloss model 2
   // 设置常数和参数
-    double miu = 4 * M_PI * 1e-7; // 绝对磁导率
+    double miu = 1.006 * 4 * M_PI * 1e-7; // 绝对磁导率
     // double epsilon_0 = 8.85 * 1e-12; // 真空介电常数
     double rho_s = 2.66; // 固体土壤颗粒的比密度，单位：g/cm^3
     double alpha_prime = 0.65;
@@ -217,14 +217,16 @@ undergroundLoraLoss::DoCalcRxPower (double txPowerDbm,
 
     double eps_r_double_prime = pow((pow(m_mv, beta_double_prime) * pow(m_eps_fw_double_prime, alpha_prime)), 1 / alpha_prime);
 
+    eps_r_prime = eps_r_prime * eps_0;
+    m_eps_fw_double_prime =  m_eps_fw_double_prime * eps_0;
     NS_LOG_DEBUG("eps_r_prime: " << eps_r_prime << ", eps_r_double_prime=" << eps_r_double_prime << ".");
 
     // 计算衰减常数 alpha
-    double alpha = (2 * M_PI * frequency * 1e-6) * std::sqrt((miu * eps_r_prime / 2 * (sqrt(1 + pow(eps_r_double_prime / eps_r_prime, 2)) - 1)));
+    double alpha = (2 * M_PI * frequency) * std::sqrt((miu * eps_r_prime / 2 * (sqrt(1 + pow(eps_r_double_prime / eps_r_prime, 2)) - 1)));
 
 
     // 计算相移常数 beta Mhz
-    double beta = (2 * M_PI * frequency * 1e-6) * std::sqrt((miu * eps_r_prime / 2 * (sqrt(1 + pow(eps_r_double_prime / eps_r_prime, 2)) + 1)));
+    double beta = (2 * M_PI * frequency) * std::sqrt((miu * eps_r_prime / 2 * (sqrt(1 + pow(eps_r_double_prime / eps_r_prime, 2)) + 1)));
 
     // 计算路径损失
     double lossDb = (6.4 + 20 * std::log10(distance) + 20 * std::log10(beta) + 8.69 * alpha * distance);
