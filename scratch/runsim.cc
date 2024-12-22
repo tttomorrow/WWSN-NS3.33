@@ -16,11 +16,11 @@ main (int argc, char *argv[]) // 主函数
     int nSinks = 1; // 汇聚节点数量
     double simtime = 100.0;
     int num_nodes = 100;
-    double BHradio = 0.4;
+    double BHradio = 0.0;
     double SFradio = 0.0;
     double x_y_length = 15.0;// 节点范围
     int uniform = 1;//控制节点是否均匀分布 1均匀分布
-    std::string expname = "20241221_st-" + std::to_string(int(simtime)) 
+    std::string expname = "20241221thoughoutput_st-" + std::to_string(int(simtime)) 
                         + "_N-" + std::to_string(int(num_nodes)) 
                         + "_BH-" + std::to_string(int(BHradio*num_nodes)) 
                         + "_SF-" + std::to_string(int(SFradio*num_nodes))
