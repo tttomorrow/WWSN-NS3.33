@@ -16,11 +16,11 @@ main (int argc, char *argv[]) // 主函数
     int nSinks = 1; // 汇聚节点数量
     double simtime = 100.0;
     int num_nodes = 100;
-    double BHradio = 0.1;
+    double BHradio = 0.4;
     double SFradio = 0.0;
-    double x_y_length = 20.0;// 节点范围
+    double x_y_length = 15.0;// 节点范围
     int uniform = 1;//控制节点是否均匀分布 1均匀分布
-    std::string expname = "20241119_st-" + std::to_string(int(simtime)) 
+    std::string expname = "20241221_st-" + std::to_string(int(simtime)) 
                         + "_N-" + std::to_string(int(num_nodes)) 
                         + "_BH-" + std::to_string(int(BHradio*num_nodes)) 
                         + "_SF-" + std::to_string(int(SFradio*num_nodes))
@@ -39,6 +39,7 @@ main (int argc, char *argv[]) // 主函数
     LogComponentEnable("soilMoistureUpdater", ns3::LOG_LEVEL_DEBUG);
     LogComponentEnable("AODVWITHBHANDSF", ns3::LOG_LEVEL_DEBUG);
     LogComponentEnable("AODVWITHBHANDSF-helper", ns3::LOG_LEVEL_DEBUG);
+    // LogComponentEnable("PropagationLossModel", ns3::LOG_LEVEL_DEBUG);
     // LogComponentEnable("wwsnSim", ns3::LOG_LEVEL_DEBUG);
     
     

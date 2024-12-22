@@ -46,7 +46,7 @@ TypeId undergroundLoraLoss::GetTypeId (void)
     .AddConstructor<undergroundLoraLoss> ()
     .AddAttribute ("Frequency", 
                    "The carrier frequency (in Hz) at which propagation occurs  (default is 515 MHz).",
-                   DoubleValue (4.15e8),
+                   DoubleValue (5.15e8),
                    MakeDoubleAccessor (&undergroundLoraLoss::SetFrequency,
                                        &undergroundLoraLoss::GetFrequency),
                    MakeDoubleChecker<double> ())
@@ -70,7 +70,7 @@ TypeId undergroundLoraLoss::GetTypeId (void)
 }
 
 undergroundLoraLoss::undergroundLoraLoss()
-    : m_frequency(4.150e8), m_systemLoss(1.0), m_minLoss(0.0), m_mv(0.0),
+    : m_frequency(5.150e8), m_systemLoss(1.0), m_minLoss(0.0), m_mv(0.0),
       m_moistureUpdater(new SoilMoistureUpdater()) // 初始化成员变量
 {
     // 其他初始化代码（如果需要）
@@ -193,7 +193,7 @@ undergroundLoraLoss::DoCalcRxPower (double txPowerDbm,
     double beta_double_prime = 1.33797 - 0.603 * m_S - 0.166 * m_C;
     double eps_winf = 4.9;
     double eps_w0 = 80.1;
-    double de_eff = -1.645 + 1.939 * m_rho_b -2.25622 * m_S + 1.594 * m_C;
+    double de_eff = 0.0467 + 0.2204 * m_rho_b - 0.4111 * m_S + 0.6614 * m_C;
     double two_pi_tao_w = 0.58 * 1e-10 ;
     double eps_0 = 8.854 * 1e-12;
 
@@ -213,12 +213,12 @@ undergroundLoraLoss::DoCalcRxPower (double txPowerDbm,
     // 计算介电常数的实部和虚部
     double eps_s = pow((1.01 + 0.44 * rho_s), 2) - 0.062;
 
-    double eps_r_prime = 1.15 * (pow(( (1 + (m_rho_b / rho_s) * pow(eps_s, alpha_prime) + pow(m_mv , beta_prime) * pow(m_eps_fw_prime, alpha_prime) - m_mv )), 1 / alpha_prime)) - 0.68;
+    double eps_r_prime = 1.15 * pow( 1 + (m_rho_b / rho_s) * pow(eps_s, alpha_prime) + (pow(m_mv , beta_prime) * pow(m_eps_fw_prime, alpha_prime)) - m_mv , 1 / alpha_prime) - 0.68;
 
-    double eps_r_double_prime = pow((pow(m_mv, beta_double_prime) * pow(m_eps_fw_double_prime, alpha_prime)), 1 / alpha_prime);
+    double eps_r_double_prime = pow(pow(m_mv, beta_double_prime) * pow(m_eps_fw_double_prime, alpha_prime), 1 / alpha_prime);
 
     eps_r_prime = eps_r_prime * eps_0;
-    m_eps_fw_double_prime =  m_eps_fw_double_prime * eps_0;
+    eps_r_double_prime =  eps_r_double_prime * eps_0;
     NS_LOG_DEBUG("eps_r_prime: " << eps_r_prime << ", eps_r_double_prime=" << eps_r_double_prime << ".");
 
     // 计算衰减常数 alpha
