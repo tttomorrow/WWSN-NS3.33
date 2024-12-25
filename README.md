@@ -8,3 +8,7 @@ If you find this useful, please cite：
   number={12},
   pages={12866--12877}
 }
+
+
+
+Hypergraph Learning for Malicious Node Detection in Wireless Weak-link Sensor Networks
