@@ -29,7 +29,7 @@ Ptr<Ipv4RoutingProtocol>
 AodvBHSFHelper::Create (Ptr<Node> node) const
 {
   // 调用重载的 Create 函数，传入默认值
-  double SetInsertTime = 0.0;
+  double SetInsertTime = 10.0;
   return Create(node, SetInsertTime);
 }
 

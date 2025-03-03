@@ -1387,7 +1387,7 @@ namespace ns3
       //   }
       // }
 
-      if (IsBlackholeNode())
+      if (IsBlackholeNode()&& IsmaliciousInsertTime())
       { // 若节点为恶意节点检查是否为黑洞节点
         // NS_LOG_DEBUG( "time:"<< (Simulator::Now ()).GetSeconds () << "Blackhole node " << m_ipv4->GetAddress(0, 0).GetLocal() << " received RREQ and sending fake RREP");
 

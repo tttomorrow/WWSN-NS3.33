@@ -392,35 +392,35 @@ MyApp::RecPacket(Ptr<Socket> socket)
 void
 MyApp::SendPacket (Ipv4Address source, Ipv4Address destination, Mac48Address  macsource, Mac48Address  macdestination)
 {   
-    uint8_t buffer[2] = { 0 };
-    std::ostringstream ossip;
-    ossip.str("");
-    ossip.clear();
-    source.Print(ossip); // 将 IPv4 地址转换为字符串
-    std::string srcipAddressString = ossip.str();
-    size_t srclastDotPosition = srcipAddressString.rfind('.');
-    // 提取最后两位数字的子字符串
-    std::string srclastTwoDigitsStr = srcipAddressString.substr(srclastDotPosition + 1);
-    // 将子字符串转换为整数
-    int srclastTwoDigits = std::stoi(srclastTwoDigitsStr);
+    // uint8_t buffer[2] = { 0 };
+    // std::ostringstream ossip;
+    // ossip.str("");
+    // ossip.clear();
+    // source.Print(ossip); // 将 IPv4 地址转换为字符串
+    // std::string srcipAddressString = ossip.str();
+    // size_t srclastDotPosition = srcipAddressString.rfind('.');
+    // // 提取最后两位数字的子字符串
+    // std::string srclastTwoDigitsStr = srcipAddressString.substr(srclastDotPosition + 1);
+    // // 将子字符串转换为整数
+    // int srclastTwoDigits = std::stoi(srclastTwoDigitsStr);
 
-    ossip.str("");
-    ossip.clear();
-    destination.Print(ossip); // 将 IPv4 地址转换为字符串
-    std::string desipAddressString = ossip.str();
-    size_t deslastDotPosition = desipAddressString.rfind('.');
-    // 提取最后两位数字的子字符串
-    std::string deslastTwoDigitsStr = desipAddressString.substr(deslastDotPosition + 1);
+    // ossip.str("");
+    // ossip.clear();
+    // destination.Print(ossip); // 将 IPv4 地址转换为字符串
+    // std::string desipAddressString = ossip.str();
+    // size_t deslastDotPosition = desipAddressString.rfind('.');
+    // // 提取最后两位数字的子字符串
+    // std::string deslastTwoDigitsStr = desipAddressString.substr(deslastDotPosition + 1);
 
-    // 将子字符串转换为整数
-    int deslastTwoDigits = std::stoi(deslastTwoDigitsStr);
+    // // 将子字符串转换为整数
+    // int deslastTwoDigits = std::stoi(deslastTwoDigitsStr);
 	
-    buffer[0] = srclastTwoDigits;
-    buffer[1] = deslastTwoDigits;
+    // buffer[0] = srclastTwoDigits;
+    // buffer[1] = deslastTwoDigits;
 
-	Ptr<Packet> packet = ns3::Create<Packet>(buffer, 2);
+	// Ptr<Packet> packet = ns3::Create<Packet>(buffer, 2);
 
-	// Ptr<Packet> packet = ns3::Create<Packet>(m_packetSize);
+	Ptr<Packet> packet = ns3::Create<Packet>(m_packetSize);
  
 // 加上IP包头：
 	// 添加IP头
@@ -455,7 +455,7 @@ MyApp::ScheduleTx (void)
     if (m_running)  // 如果应用程序正在运行
     {
         // Time tNext (Seconds (m_packetSize * 8 / static_cast<double> (m_dataRate.GetBitRate ())));  // 下一次发送的时间
-        Time tNext = Seconds(0.05); // 下一次发送的时间
+        Time tNext = Seconds(0.04); // 下一次发送的时间
         m_sendEvent = Simulator::Schedule (tNext, &MyApp::SendPacket, this, m_source, m_peer, mac_source, mac_peer);  // 定时发送数据包
     }
 }
@@ -722,7 +722,7 @@ Experiment::Run (int nSinks, double simtime, int nodes, double BHradio,
 
     Simulator::Schedule(Seconds(1.0), &Experiment::LogEnergyForAllNodes, this);
 
-    uint32_t packets_number = uint32_t(Totaltime * 20);
+    uint32_t packets_number = uint32_t(Totaltime * 23);
 
     for (int i = 0; i < nSinks; i++) // 循环设置发送节点
     {
@@ -740,7 +740,7 @@ Experiment::Run (int nSinks, double simtime, int nodes, double BHradio,
         Ptr<MyApp> app = CreateObject<MyApp> ();  // 创建应用程序对象
         Ptr<Socket> source = Socket::CreateSocket (wwsnNodes.Get (i), tid);
         Mac48Address mac_sorce = Mac48Address::ConvertFrom (wwsnNodes.Get (i)->GetDevice (0)->GetAddress ());
-        app->Setup (source, adhocInterfaces.GetAddress (i), adhocInterfaces.GetAddress (i), mac_sorce, mac_sorce, 1040, packets_number, DataRate ("1Mbps"), expname, true);  // 配置sink应用程序参数
+        app->Setup (source, adhocInterfaces.GetAddress (i), adhocInterfaces.GetAddress (i), mac_sorce, mac_sorce, 900, packets_number, DataRate ("1Mbps"), expname, true);  // 配置sink应用程序参数
         app->SetStartTime (Seconds (0));  // 设置应用程序启动时间
         app->SetStopTime (Seconds (Totaltime));  // 设置应用程序停止时间
         wwsnNodes.Get (i)->AddApplication (app);  // 将应用程序安装到节点
@@ -752,7 +752,7 @@ Experiment::Run (int nSinks, double simtime, int nodes, double BHradio,
         Ptr<MyApp> app = CreateObject<MyApp> ();  // 创建应用程序对象
         Ptr<Socket> source = Socket::CreateSocket (wwsnNodes.Get (j), tid);
         Mac48Address mac_sorce = Mac48Address::ConvertFrom (wwsnNodes.Get (j)->GetDevice (0)->GetAddress ());
-        app->Setup (source, adhocInterfaces.GetAddress (j), adhocInterfaces.GetAddress (i), mac_sorce, mac_peer, 1040, packets_number, DataRate ("1Mbps"), expname, false);  // 配置send应用程序参数
+        app->Setup (source, adhocInterfaces.GetAddress (j), adhocInterfaces.GetAddress (i), mac_sorce, mac_peer, 900, packets_number, DataRate ("1Mbps"), expname, false);  // 配置send应用程序参数
         app->SetStartTime (Seconds (0));  // 设置应用程序启动时间
         app->SetStopTime (Seconds (Totaltime));  // 设置应用程序停止时间
         wwsnNodes.Get (j)->AddApplication (app);  // 将应用程序安装到节点
