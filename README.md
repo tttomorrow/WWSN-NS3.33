@@ -1,4 +1,5 @@
 If you find this useful, please cite：
+
 @ARTICLE{wang,
   author={Wang, Chenlong and Liu, Guanghua and Jiang, Tao},
   journal={IEEE Transactions on Mobile Computing}, 
